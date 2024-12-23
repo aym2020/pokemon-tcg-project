@@ -1,0 +1,28 @@
+Pokemon Pocket TCG Rules (Short Version)
+Deck Composition:
+
+20 cards per deck.
+No Energy cards.
+Up to 2 copies of the same card allowed.
+Win Condition:
+
+First player to score 3 points wins.
+Points are earned by knocking out opponent Pokémon:
+1 point for regular Pokémon.
+2 points for Pokémon ex.
+Battle Mechanics:
+
+Players take turns performing actions:
+Draw: Draw a card at the start of the turn (except for the first player on their first turn).
+Play Pokemon: Add Pokémon to the active spot or Bench (max 3 on Bench).
+Evolve: Evolve Pokémon already in play (cannot evolve Pokémon on the same turn they were played).
+Use Trainer Cards: Play Trainer cards for additional effects.
+Attack: Attack using the active Pokémon's damage value, considering weaknesses.
+Damage and Weakness:
+
+Weakness increases damage by +20.
+No resistances.
+Other Rules:
+
+No deck searching; effects draw random cards matching criteria.
+Players cannot lose by decking out.
