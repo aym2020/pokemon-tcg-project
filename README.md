@@ -12,4 +12,4 @@ This is a Python implementation of the Pokémon Trading Card Game mechanics.
 ## How to Run
 1. Clone the repository:
    ```bash
-   git clone https://github.com/username/pokemon-tcg-project.git
+   git clone https://github.com/aym2020/pokemon-tcg-project.git
