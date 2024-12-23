@@ -18,3 +18,14 @@ build/
 
 # Ignore dependency directories
 vendor/
+
+# Ignore local files
+*.pdf
+*.docx
+*.xlsx
+
+# Ignore .env files
+.env
+
+# Ignore pycache
+__pycache__/
