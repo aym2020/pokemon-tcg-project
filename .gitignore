@@ -29,3 +29,6 @@ vendor/
 
 # Ignore pycache
 __pycache__/
+
+# Ignore egg-info
+*.egg-info/
