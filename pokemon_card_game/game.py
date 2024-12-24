@@ -1,9 +1,9 @@
 import random
-from player import Player
-from gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
-from objects_effects import object_effects
-from card import PokemonCard
-from logger import Logger
+from .player import Player
+from .gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
+from .objects_effects import object_effects
+from .card import PokemonCard
+from .logger import Logger
 from colorama import Fore
 
 class Game:
@@ -73,6 +73,16 @@ class Game:
         self.shuffle_decks()
         self.draw_initial_hands()
         self.set_active_and_bench()
+    
+    def status_check_phase(self):
+        """
+        Perform a status check phase at the end of the turn.
+        Apply effects of statuses like poison.
+        """
+        for player in self.players:
+            if player.active_pokemon and player.active_pokemon.status:
+                player.active_pokemon.apply_status_effects(self.logger)
+
 
     def log_game_state(self):
         """
@@ -139,6 +149,9 @@ class Game:
             self.logger.separator("Game Over", color=Fore.RED)
             self.logger.critical(f"{current_player.name} wins the game!", color=Fore.RED)
             exit()
+        
+        # End of turn: Perform status check
+        self.status_check_phase()
 
         # End turn
         self.turn_count += 1

@@ -1,5 +1,5 @@
 import random 
-from card import PokemonCard
+from .card import PokemonCard
 from colorama import Fore
 
 class Player:

@@ -1,5 +1,6 @@
-from card import PokemonCard
+from .card import PokemonCard
 import random
+from colorama import Fore
 
 def generate_energy(player, logger):
     """
@@ -141,3 +142,14 @@ def evolve_pokemon(player, basic_pokemon, evolution_card, logger):
     # Remove the evolution card from the player's hand
     player.hand.remove(evolution_card)
     return True
+
+def apply_poison(pokemon, logger):
+    """
+    Apply poison status to a Pokémon.
+    :param pokemon: The PokémonCard instance to poison.
+    :param logger: Logger instance to log messages.
+    """
+    if pokemon.status != "poisoned":
+        pokemon.status = "poisoned"
+        logger.log(f"{pokemon.name} is now poisoned!", color=Fore.MAGENTA)
+

@@ -1,4 +1,5 @@
-from attack import Attack
+from .attack import Attack
+from colorama import Fore
 
 class Card:
     def __init__(self, name, card_category):
@@ -36,6 +37,22 @@ class PokemonCard(Card):
         self.attacks = [Attack(attack) for attack in attacks] if attacks else []
         self.energy = {}  # Energy attached to this Pokémon
         self.evolves_from = evolves_from
+        self.status = None  # New attribute for status effects (e.g., "poisoned", "asleep")
+
+    def apply_status_effects(self, logger):
+        """
+        Apply status effects to the Pokémon at the end of the turn.
+        :param logger: Logger instance to log messages.
+        """
+        if self.status == "poisoned":
+            self.current_hp = max(0, self.current_hp - 10)  # Apply poison damage
+            logger.log(f"{self.name} is poisoned and took 10 damage. Current HP: {self.current_hp}/{self.hp}", color=Fore.MAGENTA)
+
+    def cure_status(self):
+        """
+        Cure the Pokémon's status effects.
+        """
+        self.status = None
 
     def __repr__(self):
         return (f"{self.name} (Pokemon) - Type: {self.type}, HP: {self.current_hp}/{self.hp}, "
