@@ -17,7 +17,6 @@ def generate_energy(player, logger):
     logger.log(f"{player.name} generated {energy} energy.")
     return energy
 
-
 def attach_energy(pokemon, energy_type, amount, logger):
     """
     Attach energy to a Pokémon.
@@ -32,7 +31,6 @@ def attach_energy(pokemon, energy_type, amount, logger):
         logger.log(f"{amount} {energy_type} energy attached to {pokemon.name}.")
     else:
         logger.log(f"{pokemon.name} cannot have energy attached.", color="red")
-
 
 def calculate_damage(attack, attacker, defender, logger):
     """
@@ -49,7 +47,6 @@ def calculate_damage(attack, attacker, defender, logger):
         damage += 20  # Apply weakness bonus
         logger.log(f"{attacker.name}'s attack exploits {defender.name}'s weakness! +20 damage.")
     return damage
-
 
 def handle_knockout(attacker, defender, attacking_player, defending_player, logger):
     """
@@ -79,7 +76,6 @@ def handle_knockout(attacker, defender, attacking_player, defending_player, logg
         logger.critical(f"{defending_player.name} has no more Pokémon! {attacking_player.name} wins the game!")
         exit()  # End the game
 
-
 def perform_attack(attacking_player, defending_player, logger):
     """
     Perform an attack during the current player's turn.
@@ -108,7 +104,6 @@ def perform_attack(attacking_player, defending_player, logger):
     # Check for knockout
     if defender.current_hp == 0:
         handle_knockout(attacker, defender, attacking_player, defending_player, logger)
-
 
 def evolve_pokemon(player, basic_pokemon, evolution_card, logger):
     """
@@ -153,3 +148,32 @@ def apply_poison(pokemon, logger):
         pokemon.status = "poisoned"
         logger.log(f"{pokemon.name} is now poisoned!", color=Fore.MAGENTA)
 
+def apply_sleep(pokemon, logger):
+    """
+    Apply sleep status to a Pokémon.
+    :param pokemon: The PokémonCard instance to put to sleep.
+    :param logger: Logger instance to log messages.
+    """
+    if pokemon.status != "asleep":
+        pokemon.status = "asleep"
+        logger.log(f"{pokemon.name} is now asleep!", color=Fore.MAGENTA)
+
+def perform_attack(attacking_player, defending_player, logger):
+    """
+    Perform an attack during the current player's turn.
+
+    :param attacking_player: The Player object whose Pokémon is attacking.
+    :param defending_player: The Player object whose Pokémon is defending.
+    :param logger: Logger instance to log messages.
+    """
+    attacker = attacking_player.active_pokemon
+
+    if not attacker:
+        logger.log(f"{attacking_player.name} has no active Pokémon to attack!", color=Fore.RED)
+        return
+
+    if attacker.status == "asleep":
+        logger.log(f"{attacker.name} is asleep and cannot attack.", color=Fore.RED)
+        return
+
+    # Proceed with attack logic...

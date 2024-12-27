@@ -20,7 +20,6 @@ class Player:
         self.prizes = 0  # Points earned
         self.energy_colors = energy_colors  # List of energy types the player can generate
 
-
     def draw_card(self, logger):
         """
         Draw a card from the deck into the hand.
@@ -34,7 +33,6 @@ class Player:
         self.hand.append(card)
         logger.log(f"{self.name} drew a card: {card.name}.", color=Fore.CYAN)
         return card
-
 
     def play_pokemon(self, pokemon_card, logger):
         """
@@ -52,7 +50,6 @@ class Player:
         else:
             logger.log(f"{self.name}'s bench is full! Cannot play {pokemon_card.name}.", color=Fore.RED)
 
-
     def generate_energy(self, logger):
         """
         Generate energy for this player.
@@ -66,7 +63,6 @@ class Player:
             energy = random.choice(self.energy_colors)  # Randomly choose one color for multiple options
         logger.log(f"{self.name} generated {energy} energy.", color=Fore.YELLOW)
         return energy
-
 
     def generate_first_hand(self, logger):
         """
@@ -102,7 +98,38 @@ class Player:
 
         logger.log(f"{self.name}'s initial hand: {[card.name for card in self.hand]}", color=Fore.CYAN)
 
+    def retreat(self, new_active_pokemon, logger):
+        """
+        Retreat the current active Pokémon and replace it with another.
+
+        :param new_active_pokemon: The PokémonCard instance to become active.
+        :param logger: Logger instance to log messages.
+        :return: True if the retreat was successful, False otherwise.
+        """
+        if self.active_pokemon is None:
+            logger.log(f"{self.name} has no active Pokémon to retreat.", color=Fore.RED)
+            return False
+
+        if self.active_pokemon.status in ["asleep", "paralyzed"]:
+            logger.log(f"{self.active_pokemon.name} is {self.active_pokemon.status} and cannot retreat!", color=Fore.RED)
+            return False
+
+        if new_active_pokemon not in self.bench:
+            logger.log(f"{new_active_pokemon.name} is not on the bench and cannot become the active Pokémon.", color=Fore.RED)
+            return False
+
+        # Move current active Pokémon to the bench
+        self.bench.append(self.active_pokemon)
+        self.active_pokemon = new_active_pokemon
+        self.bench.remove(new_active_pokemon)
+
+        # Log successful retreat
+        logger.log(f"{self.name} retreated {self.bench[-1].name} to the bench and sent out {self.active_pokemon.name}.", color=Fore.YELLOW)
+        return True
+
     def __repr__(self):
         return (f"{self.name} - Active: {self.active_pokemon}, "
                 f"Bench: {[p.name for p in self.bench]}, Hand: {[c.name for c in self.hand]}, "
                 f"Prizes: {self.prizes}")
+    
+

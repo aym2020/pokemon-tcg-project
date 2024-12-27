@@ -16,7 +16,6 @@ def heal_target(target, amount=20, logger=None):
     else:
         logger.log(f"{target.name} cannot be healed.", color=Fore.RED)
 
-
 def shuffle_hand_and_draw(player, draw_count, logger):
     """
     Shuffle a player's hand into their deck and allow them to draw new cards.
@@ -39,3 +38,29 @@ def shuffle_hand_and_draw(player, draw_count, logger):
             logger.log(f"{player.name} drew a card: {card.name}.", color=Fore.BLUE)
         else:
             logger.log(f"{player.name}'s deck is empty and cannot draw more cards.", color=Fore.RED)
+
+def switch_opponent_pokemon(opponent, logger):
+    """
+    Force the opponent to switch their Active Pokémon with one from their Bench.
+    The opponent chooses the new Active Pokémon.
+
+    :param opponent: The Player object representing the opponent.
+    :param logger: Logger instance to log messages.
+    """
+    if not opponent.bench:
+        logger.log(f"{opponent.name} has no Pokémon on the bench to switch with.", color=Fore.RED)
+        return
+
+    # Log current state
+    logger.log(f"{opponent.name} must switch their Active Pokémon.", color=Fore.YELLOW)
+    logger.log(f"{opponent.name}'s Bench: {[pokemon.name for pokemon in opponent.bench]}", color=Fore.YELLOW)
+
+    # Opponent chooses the new Active Pokémon (simulated here for simplicity)
+    new_active_pokemon = opponent.bench[0]  # For now, always choose the first Pokémon
+
+    # Switch the Pokémon
+    opponent.bench.append(opponent.active_pokemon)  # Move active to the bench
+    opponent.active_pokemon = new_active_pokemon
+    opponent.bench.remove(new_active_pokemon)
+
+    logger.log(f"{opponent.name} switched their Active Pokémon to {new_active_pokemon.name}.", color=Fore.GREEN)
