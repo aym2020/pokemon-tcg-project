@@ -1,4 +1,5 @@
 import json
+import os
 
 def generate_effects_txt(json_file, output_txt):
     # Load JSON data
@@ -44,4 +45,5 @@ def generate_effects_txt(json_file, output_txt):
     print(f"Effects have been saved to '{output_txt}'")
 
 # Example usage
-generate_effects_txt("pokemon_cards.json", "effects_with_cards.txt")
+output_path = os.path.join("datas", "effects_with_cards.txt")
+generate_effects_txt("pokemon_cards.json", output_path)

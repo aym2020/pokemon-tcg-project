@@ -143,10 +143,10 @@ def scrape_pokemon_cards(urls):
         all_card_data.extend(card_data)
 
     # Save to JSON file
-    with open("pokemon_cards.json", "w", encoding="utf-8") as json_file:
+    with open("datas/pokemon_cards.json", "w", encoding="utf-8") as json_file:
         json.dump(all_card_data, json_file, ensure_ascii=False, indent=4)
 
-    print(f"Saved {len(all_card_data)} Pokémon cards to 'pokemon_cards.json'")
+    print(f"Saved {len(all_card_data)} Pokémon cards to 'datas/pokemon_cards.json'")
 
 if __name__ == "__main__":
     urls = [
