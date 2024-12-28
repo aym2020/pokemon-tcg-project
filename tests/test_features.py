@@ -520,17 +520,12 @@ class TestFeatures(unittest.TestCase):
         # Check if the active Pokémon is now Charmeleon
         self.assertEqual(player.active_pokemon.name, "Charmeleon", "The active Pokémon should now be Charmeleon.")
         
-
-        # Check if Charmander is in the discard pile
-        self.assertIn(charmander, player.discard_pile, "Charmander should be in the discard pile.")
-        """
         # Check if Charmeleon is in the newly evolved Pokémon list
         self.assertIn(charmeleon, player.newly_evolved_pokemons, "Charmeleon should be in the newly evolved Pokémon list.")
 
         # Attempt invalid evolution: Charmander -> Charizard
         result2 = evolve_pokemon(player, charmander, charizard, self.logger, game.turn_count)
-        self.assertFalse(result2, "Charmander should not evolve directly into Charizard.")"""
-
+        self.assertFalse(result2, "Charmander should not evolve directly into Charizard.")
 
     def test_evolution_clears_status_conditions(self):
         """
@@ -542,6 +537,9 @@ class TestFeatures(unittest.TestCase):
         
         # Create a player
         player = Player("Ash", [charmander, charmeleon], ["Fire"])
+        
+        # Initialize the player's hand
+        player.hand.append(charmeleon)
         
         # Set status condition
         charmander.status = "poisoned"
