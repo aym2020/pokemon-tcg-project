@@ -1,24 +1,19 @@
 import random 
-from card import PokemonCard
+from pokemon_card_game.card import PokemonCard
 from colorama import Fore
 
 class Player:
     def __init__(self, name, deck, energy_colors):
-        """
-        Initialize a player.
-
-        :param name: Name of the player.
-        :param deck: A list of Card objects representing the player's deck.
-        :param energy_colors: List of energy types the player can generate.
-        """
         self.name = name
-        self.deck = deck  # List of Card objects
-        self.hand = []  # Cards drawn from the deck
-        self.active_pokemon = None  # Currently active Pokémon
-        self.bench = []  # Bench Pokémon (max 3)
-        self.discard_pile = []  # Cards discarded during gameplay
-        self.prizes = 0  # Points earned
-        self.energy_colors = energy_colors  # List of energy types the player can generate
+        self.deck = deck
+        self.hand = []
+        self.active_pokemon = None
+        self.bench = []
+        self.discard_pile = []
+        self.prizes = 0
+        self.energy_colors = energy_colors
+        self.newly_played_pokemons = []  # Track Pokémon played this turn
+        self.newly_evolved_pokemons = [] # Track Pokémon evolved this turn
 
     def draw_card(self, logger):
         """
@@ -49,6 +44,10 @@ class Player:
             logger.log(f"{self.name} placed {pokemon_card.name} on the bench.", color=Fore.GREEN)
         else:
             logger.log(f"{self.name}'s bench is full! Cannot play {pokemon_card.name}.", color=Fore.RED)
+            return
+
+        # Append the played Pokémon to newly_played_pokemons
+        self.newly_played_pokemons.append(pokemon_card)
 
     def generate_energy(self, logger):
         """
@@ -126,6 +125,11 @@ class Player:
         # Log successful retreat
         logger.log(f"{self.name} retreated {self.bench[-1].name} to the bench and sent out {self.active_pokemon.name}.", color=Fore.YELLOW)
         return True
+
+    def clear_newly_played_and_evolved_pokemons(self):
+        """Clear the list of newly played Pokémon at the end of the turn."""
+        self.newly_played_pokemons.clear()
+        self.newly_evolved_pokemons.clear()
 
     def __repr__(self):
         return (f"{self.name} - Active: {self.active_pokemon}, "

@@ -1,9 +1,9 @@
 import random
-from player import Player
-from gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
-from objects_effects import object_effects
-from card import PokemonCard
-from logger import Logger
+from pokemon_card_game.player import Player
+from pokemon_card_game.gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
+from pokemon_card_game.objects_effects import object_effects
+from pokemon_card_game.card import PokemonCard
+from pokemon_card_game.logger import Logger
 from colorama import Fore
 
 class Game:
@@ -18,7 +18,16 @@ class Game:
         self.current_turn = None  # 0 for player1, 1 for player2
         self.turn_count = 0
         self.logger = Logger(verbose=verbose)
+        self.game_state = {"winner": None, "ended": False}  # Track game state
 
+    def end_game(self, winner_name):
+        """
+        Mark the game as ended and set the winner.
+        """
+        self.game_state["winner"] = winner_name
+        self.game_state["ended"] = True
+        self.logger.log(f"The game has ended. Winner: {winner_name}", color=Fore.RED)
+        
     def coin_toss(self):
         """
         Determine who starts first using a coin toss.
@@ -44,24 +53,16 @@ class Game:
             player.generate_first_hand(self.logger)
 
     def set_active_and_bench(self):
-        """
-        Ensure each player sets an active Pokémon and optionally places Pokémon on the bench.
-        """
         for player in self.players:
-            # Set the active Pokémon
-            active_pokemon = next((card for card in player.hand if isinstance(card, PokemonCard)), None)
+            active_pokemon = next((card for card in player.hand if isinstance(card, PokemonCard) and not card.evolves_from), None)
             if active_pokemon:
-                player.play_pokemon(active_pokemon, self.logger)
+                player.play_pokemon(active_pokemon, self.logger)  # `play_pokemon` now handles appending
                 player.hand.remove(active_pokemon)
-                self.logger.log(f"{player.name} set {active_pokemon.name} as their active Pokémon.", color=Fore.GREEN)
-            else:
-                self.logger.log(f"{player.name} has no Pokémon to set as active! This shouldn't happen.", color=Fore.RED)
 
-            # Set Bench Pokémon
-            bench_pokemon = [card for card in player.hand if isinstance(card, PokemonCard)]
+            bench_pokemon = [card for card in player.hand if isinstance(card, PokemonCard) and not card.evolves_from]
             for pokemon in bench_pokemon:
-                if len(player.bench) < 3:  # Bench limit of 3
-                    player.play_pokemon(pokemon, self.logger)
+                if len(player.bench) < 3:
+                    player.play_pokemon(pokemon, self.logger)  # `play_pokemon` now handles appending
                     player.hand.remove(pokemon)
 
     def start_game(self):
@@ -82,7 +83,25 @@ class Game:
         for player in self.players:
             if player.active_pokemon and player.active_pokemon.status:
                 player.active_pokemon.apply_status_effects(self.logger)
+    
+    def end_turn(self):
+        """
+        Handle the end-of-turn logic for the current player.
+        """
+        current_player = self.players[self.current_turn]
 
+        # Perform status check phase
+        self.status_check_phase()
+
+        # Switch turn to the next player
+        self.turn_count += 1
+        self.current_turn = 1 - self.current_turn  # Switch to the other player
+
+        # Clear newly played Pokémon
+        current_player.clear_newly_played_and_evolved_pokemons()
+
+        # Log the turn transition
+        self.logger.log(f"End of turn {self.turn_count}. Next turn: {self.players[self.current_turn].name}'s turn.", color=Fore.MAGENTA)
 
     def log_game_state(self):
         """
@@ -98,6 +117,11 @@ class Game:
         """
         Execute a player's turn based on the turn count.
         """
+        # Check if the game has already ended
+        if self.game_state["ended"]:
+            self.logger.log("The game has already ended.", color=Fore.RED)
+            return
+
         current_player = self.players[self.current_turn]
         opponent = self.players[1 - self.current_turn]
 
@@ -114,7 +138,7 @@ class Game:
         self.logger.log(f"{opponent.name}'s Bench: {[p.name for p in opponent.bench]}", color=Fore.YELLOW)
 
         if self.turn_count == 0:
-            self.logger.log("First turn: No card draw or energy generation.", color=Fore.MAGENTA)
+            self.logger.log("First turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
         else:
             # Draw a card
             card = current_player.draw_card(self.logger)
@@ -130,9 +154,17 @@ class Game:
         # Player actions
         for card in current_player.hand[:]:  # Iterate over a copy of the hand
             if card.card_category == "Pokemon":
-                current_player.play_pokemon(card, self.logger)
-                self.logger.log(f"{current_player.name} played {card.name} on the field.", color=Fore.GREEN)
+                # Handle evolution
+                if card.evolves_from:
+                    basic_pokemon = next((p for p in [current_player.active_pokemon] + current_player.bench if p and p.name == card.evolves_from), None)
+                    if basic_pokemon:
+                        evolve_pokemon(current_player, basic_pokemon, card, self.logger, self.turn_count)
+                else:
+                    # Play a basic Pokémon
+                    current_player.play_pokemon(card, self.logger)
+                    self.logger.log(f"{current_player.name} played {card.name} on the field.", color=Fore.GREEN)
             elif card.card_category in ["Trainer", "Object"]:
+                # Handle trainer or object card effects
                 effect_function = object_effects.get(card.name)
                 if effect_function:
                     self.logger.log(f"{current_player.name} used {card.name}.", color=Fore.YELLOW)
@@ -142,17 +174,15 @@ class Game:
         # Attack if it's not the first turn
         if self.turn_count > 0:
             self.logger.log(f"{current_player.name} attacks!", color=Fore.MAGENTA)
-            perform_attack(current_player, opponent, self.logger)
+            perform_attack(current_player, opponent, self.logger, self)  # Pass the game instance
 
         # Check for win condition
         if current_player.prizes >= 3:
             self.logger.separator("Game Over", color=Fore.RED)
             self.logger.critical(f"{current_player.name} wins the game!", color=Fore.RED)
-            exit()
-        
-        # End of turn: Perform status check
-        self.status_check_phase()
+            self.end_game(current_player.name)  # End the game instead of raising an exception
+            return  # Skip further processing after the game ends
 
-        # End turn
-        self.turn_count += 1
-        self.current_turn = 1 - self.current_turn  # Switch turns
+        # Handle end-of-turn logic
+        self.end_turn()
+

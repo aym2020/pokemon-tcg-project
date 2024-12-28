@@ -1,4 +1,4 @@
-from card import PokemonCard
+from pokemon_card_game.card import PokemonCard
 import random
 from colorama import Fore
 
@@ -30,7 +30,7 @@ def attach_energy(pokemon, energy_type, amount, logger):
         pokemon.energy[energy_type] = pokemon.energy.get(energy_type, 0) + amount
         logger.log(f"{amount} {energy_type} energy attached to {pokemon.name}.")
     else:
-        logger.log(f"{pokemon.name} cannot have energy attached.", color="red")
+        logger.log(f"{pokemon.name} cannot have energy attached.", color=Fore.RED)
 
 def calculate_damage(attack, attacker, defender, logger):
     """
@@ -48,7 +48,7 @@ def calculate_damage(attack, attacker, defender, logger):
         logger.log(f"{attacker.name}'s attack exploits {defender.name}'s weakness! +20 damage.")
     return damage
 
-def handle_knockout(attacker, defender, attacking_player, defending_player, logger):
+def handle_knockout(attacker, defender, attacking_player, defending_player, logger, game):
     """
     Handle a knockout event.
 
@@ -57,6 +57,7 @@ def handle_knockout(attacker, defender, attacking_player, defending_player, logg
     :param attacking_player: The Player object whose Pokémon made the knockout.
     :param defending_player: The Player object whose Pokémon was knocked out.
     :param logger: Logger instance to log messages.
+    :param game: The Game object to update the game state.
     """
     logger.log(f"{defender.name} was knocked out!")
     points = 2 if defender.is_ex else 1
@@ -74,9 +75,9 @@ def handle_knockout(attacker, defender, attacking_player, defending_player, logg
     else:
         # No bench Pokémon, defending player loses
         logger.critical(f"{defending_player.name} has no more Pokémon! {attacking_player.name} wins the game!")
-        exit()  # End the game
+        game.end_game(attacking_player.name)
 
-def perform_attack(attacking_player, defending_player, logger):
+def perform_attack(attacking_player, defending_player, logger, game):
     """
     Perform an attack during the current player's turn.
 
@@ -88,24 +89,30 @@ def perform_attack(attacking_player, defending_player, logger):
     defender = defending_player.active_pokemon
 
     if not attacker or not defender:
-        logger.log("Both players must have active Pokémon to perform an attack!", color="red")
+        logger.log("Both players must have active Pokémon to perform an attack!", color=Fore.RED)
         return
 
     # Select the first attack for simplicity
     attack = attacker.attacks[0]
+
+    # Check if the Pokémon has enough energy to perform the attack
+    for energy_type, required_amount in attack.energy_required.items():
+        if attacker.energy.get(energy_type, 0) < required_amount:
+            logger.log(f"{attacker.name} does not have enough {energy_type} energy to perform {attack.damage} damage.", color=Fore.RED)
+            return  # Skip the attack if energy is insufficient
 
     # Calculate damage
     damage = calculate_damage(attack, attacker, defender, logger)
 
     # Apply damage
     defender.current_hp = max(0, defender.current_hp - damage)
-    logger.log(f"{attacker.name} used {attack.damage}! {defender.name} took {damage} damage. Current HP: {defender.current_hp}/{defender.hp}")
+    logger.log(f"{defender.name} took {damage} damage. Current HP: {defender.current_hp}/{defender.hp}", color=Fore.CYAN)
 
     # Check for knockout
     if defender.current_hp == 0:
-        handle_knockout(attacker, defender, attacking_player, defending_player, logger)
+        handle_knockout(attacker, defender, attacking_player, defending_player, logger, game)
 
-def evolve_pokemon(player, basic_pokemon, evolution_card, logger):
+def evolve_pokemon(player, basic_pokemon, evolution_card, logger, turn_count):
     """
     Evolve a basic Pokémon into its evolution.
 
@@ -113,9 +120,34 @@ def evolve_pokemon(player, basic_pokemon, evolution_card, logger):
     :param basic_pokemon: The basic Pokémon being evolved.
     :param evolution_card: The Evolution Pokémon card being played.
     :param logger: Logger instance to log messages.
+    :param turn_count: The current turn count to enforce first-turn restrictions.
     """
+    # Prevent evolution during the first turn
+    if turn_count <= 1:
+        logger.log(f"{evolution_card.name} cannot evolve during the first turn.", color=Fore.RED)
+        return False
+
+    # Check if the evolution hierarchy is correct
+    if evolution_card.subcategory == "Stage 1" and basic_pokemon.subcategory != "Basic":
+        logger.log(f"{evolution_card.name} can only evolve from a Basic Pokémon.", color=Fore.RED)
+        return False
+    if evolution_card.subcategory == "Stage 2" and basic_pokemon.subcategory != "Stage 1":
+        logger.log(f"{evolution_card.name} can only evolve from a Stage 1 Pokémon.", color=Fore.RED)
+        return False
+
+    # Check if evolution_card lists the correct pre-evolution
     if not evolution_card.evolves_from or evolution_card.evolves_from != basic_pokemon.name:
-        logger.log(f"{evolution_card.name} cannot evolve from {basic_pokemon.name}.", color="red")
+        logger.log(f"{evolution_card.name} cannot evolve from {basic_pokemon.name}.", color=Fore.RED)
+        return False
+
+    # Prevent evolution for Pokémon that evolved this turn
+    if basic_pokemon in player.newly_evolved_pokemons:
+        logger.log(f"{basic_pokemon.name} has already evolved this turn and cannot evolve again.", color=Fore.RED)
+        return False
+
+    # Prevent evolution on the same turn a Pokémon is played
+    if basic_pokemon in player.newly_played_pokemons:
+        logger.log(f"{basic_pokemon.name} cannot evolve this turn; it was just played.", color=Fore.RED)
         return False
 
     # Transfer damage and energy
@@ -125,17 +157,24 @@ def evolve_pokemon(player, basic_pokemon, evolution_card, logger):
     # Replace the basic Pokémon
     if player.active_pokemon == basic_pokemon:
         player.active_pokemon = evolution_card
-        logger.log(f"{player.name} evolved their Active Pokémon {basic_pokemon.name} into {evolution_card.name}.")
+        logger.log(f"{player.name} evolved their Active Pokémon {basic_pokemon.name} into {evolution_card.name}.", color=Fore.GREEN)
     elif basic_pokemon in player.bench:
         index = player.bench.index(basic_pokemon)
         player.bench[index] = evolution_card
-        logger.log(f"{player.name} evolved Bench Pokémon {basic_pokemon.name} into {evolution_card.name}.")
+        logger.log(f"{player.name} evolved Bench Pokémon {basic_pokemon.name} into {evolution_card.name}.", color=Fore.GREEN)
     else:
-        logger.log(f"{basic_pokemon.name} is not in play and cannot be evolved.", color="red")
+        logger.log(f"{basic_pokemon.name} is not in play and cannot be evolved.", color=Fore.RED)
         return False
+
+    # Remove status effects
+    evolution_card.status = None
+    logger.log(f"{basic_pokemon.name}'s status conditions have been healed by evolution.", color=Fore.CYAN)
 
     # Remove the evolution card from the player's hand
     player.hand.remove(evolution_card)
+
+    # Track the newly evolved Pokémon
+    player.newly_evolved_pokemons.append(evolution_card)
     return True
 
 def apply_poison(pokemon, logger):
@@ -157,4 +196,3 @@ def apply_sleep(pokemon, logger):
     if pokemon.status != "asleep":
         pokemon.status = "asleep"
         logger.log(f"{pokemon.name} is now asleep!", color=Fore.MAGENTA)
-    

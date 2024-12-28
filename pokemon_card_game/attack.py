@@ -1,6 +1,6 @@
 import re
 from colorama import Fore
-from attack_effects import deal_damage, discard_energy, apply_status_condition, heal_damage, flip_coins, modify_attack_damage
+from pokemon_card_game.attack_effects import deal_damage, discard_energy, apply_status_condition, heal_damage, flip_coins, modify_attack_damage
 
 class Attack:
     def __init__(self, attack_string):

@@ -1,4 +1,4 @@
-from effects import (
+from pokemon_card_game.effects import (
     heal_target,
     move_energy,
     switch_opponent_pokemon,

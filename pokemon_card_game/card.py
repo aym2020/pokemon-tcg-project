@@ -1,4 +1,4 @@
-from attack import Attack
+from pokemon_card_game.attack import Attack
 from colorama import Fore
 import random
 
@@ -18,28 +18,26 @@ class Card:
 
 class PokemonCard(Card):
     def __init__(self, name, type, hp, weakness, is_ex=False, attacks=None, evolves_from=None, 
-                 ability=None, energy=None, retreat=None, resistance=None, status=None, paralysis_timer=0):
+                 subcategory="Basic", energy=None, retreat=None, resistance=None, status=None, paralysis_timer=0):
         """
         Initialize a Pokémon card.
 
-        :param type: The type of the Pokémon (e.g., "Fire").
-        :param hp: The health points of the Pokémon.
-        :param weakness: The type this Pokémon is weak to.
-        :param is_ex: Whether the Pokémon is an EX Pokémon.
-        :param attacks: A list of attack strings (e.g., ["60FCC"]).
-        :param evolves_from: The name of the Pokémon this card evolves from (if any).
+        :param subcategory: Indicates the Pokémon's stage (e.g., "Basic", "Stage 1", "Stage 2").
         """
         super().__init__(name, "Pokemon")
         self.type = type
         self.hp = hp
+        self.current_hp = hp
         self.weakness = weakness
         self.is_ex = is_ex
-        self.current_hp = hp
         self.attacks = [Attack(attack) for attack in attacks] if attacks else []
-        self.energy = {}  # Energy attached to this Pokémon
         self.evolves_from = evolves_from
-        self.status = None  # New attribute for status effects (e.g., "poisoned", "asleep")
-        self.paralysis_timer = 0  # Timer to track paralysis duration
+        self.subcategory = subcategory  # Basic, Stage 1, Stage 2
+        self.energy = energy if energy else {}
+        self.retreat = retreat
+        self.resistance = resistance
+        self.status = status
+        self.paralysis_timer = paralysis_timer
 
     def apply_status_effects(self, logger):
         """

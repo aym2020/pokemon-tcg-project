@@ -36,3 +36,9 @@ __pycache__/
 # File tests
 *main_test.py
 *scrapper_test.py
+
+# Ignore .vscode
+.vscode/
+
+# Ignore .git
+.git/
