@@ -1,7 +1,7 @@
-from .card import Card
-from .card  import PokemonCard, TrainerCard, ObjectCard
-from .player import Player
-from .game import Game
+from card import Card
+from card  import PokemonCard, TrainerCard, ObjectCard
+from player import Player
+from game import Game
 
 # Create decks
 deck1 = [

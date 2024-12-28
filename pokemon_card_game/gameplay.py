@@ -1,4 +1,4 @@
-from .card import PokemonCard
+from card import PokemonCard
 import random
 from colorama import Fore
 
@@ -157,23 +157,4 @@ def apply_sleep(pokemon, logger):
     if pokemon.status != "asleep":
         pokemon.status = "asleep"
         logger.log(f"{pokemon.name} is now asleep!", color=Fore.MAGENTA)
-
-def perform_attack(attacking_player, defending_player, logger):
-    """
-    Perform an attack during the current player's turn.
-
-    :param attacking_player: The Player object whose Pokémon is attacking.
-    :param defending_player: The Player object whose Pokémon is defending.
-    :param logger: Logger instance to log messages.
-    """
-    attacker = attacking_player.active_pokemon
-
-    if not attacker:
-        logger.log(f"{attacking_player.name} has no active Pokémon to attack!", color=Fore.RED)
-        return
-
-    if attacker.status == "asleep":
-        logger.log(f"{attacker.name} is asleep and cannot attack.", color=Fore.RED)
-        return
-
-    # Proceed with attack logic...
+    

@@ -1,9 +1,9 @@
 import random
-from .player import Player
-from .gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
-from .objects_effects import object_effects
-from .card import PokemonCard
-from .logger import Logger
+from player import Player
+from gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
+from objects_effects import object_effects
+from card import PokemonCard
+from logger import Logger
 from colorama import Fore
 
 class Game:
