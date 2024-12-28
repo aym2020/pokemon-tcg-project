@@ -32,3 +32,7 @@ __pycache__/
 
 # Ignore egg-info
 *.egg-info/
+
+# File tests
+*main_test.py
+*scrapper_test.py

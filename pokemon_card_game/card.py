@@ -17,7 +17,8 @@ class Card:
         return f"{self.name} ({self.card_category})"
 
 class PokemonCard(Card):
-    def __init__(self, name, type, hp, weakness, is_ex=False, attacks=None, evolves_from=None):
+    def __init__(self, name, type, hp, weakness, is_ex=False, attacks=None, evolves_from=None, 
+                 ability=None, energy=None, retreat=None, resistance=None, status=None, paralysis_timer=0):
         """
         Initialize a Pokémon card.
 
