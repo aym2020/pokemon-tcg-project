@@ -86,14 +86,23 @@ class Attack:
         """
         Execute the attack, dealing damage and applying effects.
 
+        :param attacker: The Pokémon performing the attack.
         :param target: The target Pokémon to attack.
         :param logger: Logger instance to log messages.
         """
+        # Calculate damage with weakness
+        damage = self.damage
+        if target.weakness == attacker.type:
+            damage += 20  # Apply the weakness bonus
+            if logger:
+                logger.log(f"{target.name}'s weakness to {attacker.type} adds 20 extra damage!", color=Fore.MAGENTA)
+
         # Deal damage
-        deal_damage(target, self.damage, logger=logger)
+        deal_damage(target, damage, logger=logger)
 
         # Apply special effects
         self.apply_effect(attacker, target, logger=logger)
+
 
     def __repr__(self):
         return (f"Damage: {self.damage}, Energy: {self.energy_required}, "

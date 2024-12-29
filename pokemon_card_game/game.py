@@ -7,7 +7,7 @@ from pokemon_card_game.logger import Logger
 from colorama import Fore
 
 class Game:
-    def __init__(self, player1, player2, verbose=True):
+    def __init__(self, player1, player2, verbose=True, ai1=None, ai2=None):
         """
         Initialize the game with two players.
 
@@ -15,6 +15,7 @@ class Game:
         :param player2: Player 2 object.
         """
         self.players = [player1, player2]
+        self.ais = [ai1, ai2]  # Optional AI instances
         self.current_turn = None  # 0 for player1, 1 for player2
         self.turn_count = 0
         self.logger = Logger(verbose=verbose)
@@ -137,51 +138,55 @@ class Game:
         self.logger.log(f"{current_player.name}'s Bench: {[p.name for p in current_player.bench]}", color=Fore.YELLOW)
         self.logger.log(f"{opponent.name}'s Bench: {[p.name for p in opponent.bench]}", color=Fore.YELLOW)
 
-        if self.turn_count == 0:
-            self.logger.log("First turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
+        if self.ais[self.current_turn]:
+            # AI plays the turn
+            self.ais[self.current_turn].play_turn(opponent, self)
         else:
-            # Draw a card
-            card = current_player.draw_card(self.logger)
-            if card:
-                self.logger.log(f"{current_player.name} drew {card.name}.", color=Fore.BLUE)
+            if self.turn_count == 0:
+                self.logger.log("First turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
+            else:
+                # Draw a card
+                card = current_player.draw_card(self.logger)
+                if card:
+                    self.logger.log(f"{current_player.name} drew {card.name}.", color=Fore.BLUE)
 
-            # Generate and attach energy
-            generated_energy = current_player.generate_energy(self.logger)
-            if current_player.active_pokemon:
-                attach_energy(current_player.active_pokemon, generated_energy, 1, self.logger)
-                self.logger.log(f"{current_player.name} generated {generated_energy} energy.", color=Fore.BLUE)
+                # Generate and attach energy
+                generated_energy = current_player.generate_energy(self.logger)
+                if current_player.active_pokemon:
+                    attach_energy(current_player.active_pokemon, generated_energy, 1, self.logger)
+                    self.logger.log(f"{current_player.name} generated {generated_energy} energy.", color=Fore.BLUE)
 
-        # Player actions
-        for card in current_player.hand[:]:  # Iterate over a copy of the hand
-            if card.card_category == "Pokemon":
-                # Handle evolution
-                if card.evolves_from:
-                    basic_pokemon = next((p for p in [current_player.active_pokemon] + current_player.bench if p and p.name == card.evolves_from), None)
-                    if basic_pokemon:
-                        evolve_pokemon(current_player, basic_pokemon, card, self.logger, self.turn_count)
-                else:
-                    # Play a basic Pokémon
-                    current_player.play_pokemon(card, self.logger)
-                    self.logger.log(f"{current_player.name} played {card.name} on the field.", color=Fore.GREEN)
-            elif card.card_category in ["Trainer", "Object"]:
-                # Handle trainer or object card effects
-                effect_function = object_effects.get(card.name)
-                if effect_function:
-                    self.logger.log(f"{current_player.name} used {card.name}.", color=Fore.YELLOW)
-                    effect_function(current_player, opponent, self.logger)  # Pass the logger
-                    current_player.hand.remove(card)
+            # Player actions
+            for card in current_player.hand[:]:  # Iterate over a copy of the hand
+                if card.card_category == "Pokemon":
+                    # Handle evolution
+                    if card.evolves_from:
+                        basic_pokemon = next((p for p in [current_player.active_pokemon] + current_player.bench if p and p.name == card.evolves_from), None)
+                        if basic_pokemon:
+                            evolve_pokemon(current_player, basic_pokemon, card, self.logger, self.turn_count)
+                    else:
+                        # Play a basic Pokémon
+                        current_player.play_pokemon(card, self.logger)
+                        self.logger.log(f"{current_player.name} played {card.name} on the field.", color=Fore.GREEN)
+                elif card.card_category in ["Trainer", "Object"]:
+                    # Handle trainer or object card effects
+                    effect_function = object_effects.get(card.name)
+                    if effect_function:
+                        self.logger.log(f"{current_player.name} used {card.name}.", color=Fore.YELLOW)
+                        effect_function(current_player, opponent, self.logger)  # Pass the logger
+                        current_player.hand.remove(card)
 
-        # Attack if it's not the first turn
-        if self.turn_count > 0:
-            self.logger.log(f"{current_player.name} attacks!", color=Fore.MAGENTA)
-            perform_attack(current_player, opponent, self.logger, self)  # Pass the game instance
+            # Attack if it's not the first turn
+            if self.turn_count > 0:
+                self.logger.log(f"{current_player.name} attacks!", color=Fore.MAGENTA)
+                perform_attack(current_player, opponent, self.logger, self)  # Pass the game instance
 
-        # Check for win condition
-        if current_player.prizes >= 3:
-            self.logger.separator("Game Over", color=Fore.RED)
-            self.logger.critical(f"{current_player.name} wins the game!", color=Fore.RED)
-            self.end_game(current_player.name)  # End the game instead of raising an exception
-            return  # Skip further processing after the game ends
+            # Check for win condition
+            if current_player.prizes >= 3:
+                self.logger.separator("Game Over", color=Fore.RED)
+                self.logger.critical(f"{current_player.name} wins the game!", color=Fore.RED)
+                self.end_game(current_player.name)  # End the game instead of raising an exception
+                return  # Skip further processing after the game ends
 
         # Handle end-of-turn logic
         self.end_turn()

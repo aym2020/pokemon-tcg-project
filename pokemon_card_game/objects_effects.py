@@ -6,13 +6,14 @@ from pokemon_card_game.effects import (
     boost_attack_damage,
     play_as_pokemon,
     retrieve_to_hand,
-    attach_energy_to_specific_pokemon
+    attach_energy_to_specific_pokemon,
+    misty_effect
 )
 
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
-    "Misty": lambda player, opponent, logger: flip_coins_until_tails(
-        "attach_energy", "Water", player.active_pokemon, logger
+    "Misty": lambda player, opponent, logger: misty_effect(
+        player, logger, ai_decision_function=None
     ),
     "Blaine": lambda player, opponent, logger: boost_attack_damage(
         [pokemon for pokemon in player.bench if pokemon.name in ["Ninetales", "Rapidash", "Magmar"]],

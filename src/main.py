@@ -1,7 +1,8 @@
 from pokemon_card_game.card import Card
 from pokemon_card_game.card  import PokemonCard, TrainerCard, ObjectCard
 from pokemon_card_game.player import Player
-from pokemon_card_game.game import Game
+from pokemon_card_game.game import Game, Logger 
+from pokemon_card_game.ai import BasicAI
 
 # Create decks
 deck1 = [
@@ -28,10 +29,16 @@ deck2_energy_colors = ["W"]
 player1 = Player(name="Ash", deck=deck1, energy_colors=deck1_energy_colors)
 player2 = Player(name="Gary", deck=deck2, energy_colors=deck2_energy_colors)
 
-# Initialize the game
-game = Game(player1, player2, verbose=True)  # Enable detailed logs
-game.start_game()
+# Logger instance
+logger = Logger()
 
-# Simulate turns
-for _ in range(30):  # Simulate x turns
+# Set up AI for player 2
+ai1 = BasicAI(player1, logger)
+ai2 = BasicAI(player2, logger)
+
+# Initialize the game
+game = Game(player1, player2, verbose=True, ai1=ai1, ai2=ai2)
+
+game.start_game()
+while not game.game_state["ended"]:
     game.play_turn()

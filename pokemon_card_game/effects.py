@@ -32,22 +32,98 @@ def switch_opponent_pokemon(opponent, logger):
     if logger:
         logger.log(f"{opponent.name} switched their Active Pokémon to {new_active_pokemon.name}.", color=Fore.GREEN)
 
-
-def flip_coins_until_tails(action, energy_type, target, logger):
+def flip_coins_until_tails(logger=None):
+    """
+    Flip coins until tails and count the number of heads.
+    :param logger: Logger instance to log messages.
+    :return: Number of heads flipped.
+    """
     heads_count = 0
     while random.choice([True, False]):  # Heads = True, Tails = False
         heads_count += 1
         if logger:
             logger.log(f"Flip result: Heads ({heads_count}).", color=Fore.MAGENTA)
     if logger:
-        logger.log(f"Flip result: Tails. Total heads: {heads_count}.", color=Fore.MAGENTA)
+        logger.log("Flip result: Tails.", color=Fore.MAGENTA)
+    return heads_count
 
-    if action == "attach_energy":
-        target.energy[energy_type] = target.energy.get(energy_type, 0) + heads_count
+def attach_energy_directly(target, energy_type, amount, logger=None):
+    """
+    Attach a specified amount of energy directly to a Pokémon.
+    :param target: The Pokémon to attach energy to.
+    :param energy_type: The type of energy to attach.
+    :param amount: The number of energy units to attach.
+    :param logger: Logger instance to log messages.
+    """
+    for _ in range(amount):
+        target.energy[energy_type] = target.energy.get(energy_type, 0) + 1
         if logger:
-            logger.log(f"{target.name} attached {heads_count} {energy_type} energy.", color=Fore.YELLOW)
+            logger.log(f"Attached 1 {energy_type} energy to {target.name}.", color=Fore.YELLOW)
+        
+def misty_effect(player, logger=None, ai_decision_function=None):
+    """
+    Choose 1 Water Pokémon, flip coins until tails, and attach Water Energy for each heads.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    :param ai_decision_function: Optional function for AI to choose the target Pokémon.
+    """
+    # Select a Water Pokémon
+    target = select_pokemon(
+        [player.active_pokemon] + player.bench,
+        condition=lambda p: p.type == "Water",
+        logger=logger,
+        ai_decision_function=ai_decision_function
+    )
 
+    if not target:
+        return
 
+    # Flip coins and count heads
+    heads_count = flip_coins_until_tails(logger)
+
+    # Attach generated energy based on the number of heads
+    attach_energy_directly(target, "W", heads_count, logger)
+
+def select_pokemon(pokemon_list, condition, active_pokemon=None, logger=None, ai_decision_function=None):
+    """
+    Select a Pokémon from the list based on a condition or AI decision.
+    Prioritize the active Pokémon by default.
+    :param pokemon_list: List of Pokémon to select from.
+    :param condition: A callable to filter Pokémon.
+    :param active_pokemon: The currently active Pokémon to prioritize.
+    :param logger: Logger instance to log messages.
+    :param ai_decision_function: Optional function for AI to choose a Pokémon.
+    :return: The selected Pokémon or None if no valid Pokémon found.
+    """
+    # Check if the active Pokémon satisfies the condition
+    if active_pokemon and condition(active_pokemon):
+        if logger:
+            logger.log(f"Selected Active Pokémon: {active_pokemon.name}.", color=Fore.CYAN)
+        return active_pokemon
+
+    # Otherwise, filter the bench Pokémon
+    valid_pokemon = [p for p in pokemon_list if condition(p)]
+
+    if not valid_pokemon:
+        if logger:
+            logger.log("No valid Pokémon found for selection.", color=Fore.RED)
+        return None
+
+    # Use AI decision function if provided, otherwise default to the first valid Pokémon
+    selected_pokemon = ai_decision_function(valid_pokemon) if ai_decision_function else valid_pokemon[0]
+
+    if logger:
+        logger.log(f"Selected Pokémon: {selected_pokemon.name}.", color=Fore.CYAN)
+    return selected_pokemon
+ 
+def attach_energy_to_specific_pokemon(energy_zone, pokemon, energy_type, logger):
+    if energy_zone.get(energy_type, 0) > 0:
+        amount = 1
+        energy_zone[energy_type] -= amount
+        pokemon.energy[energy_type] = pokemon.energy.get(energy_type, 0) + amount
+        if logger:
+            logger.log(f"Attached {amount} {energy_type} energy to {pokemon.name}.", color=Fore.YELLOW)
+            
 def boost_attack_damage(targets, boost_amount, logger):
     for target in targets:
         if hasattr(target, "damage_boost"):
@@ -55,12 +131,10 @@ def boost_attack_damage(targets, boost_amount, logger):
             if logger:
                 logger.log(f"{target.name}'s attacks will do +{boost_amount} damage this turn.", color=Fore.GREEN)
 
-
 def play_as_pokemon(card, logger):
     card.is_played_as_pokemon = True
     if logger:
         logger.log(f"{card.name} is now played as a 40-HP Basic Colorless Pokémon.", color=Fore.CYAN)
-
 
 def retrieve_to_hand(player, card_name, logger):
     for pokemon in [player.active_pokemon] + player.bench:
@@ -73,15 +147,6 @@ def retrieve_to_hand(player, card_name, logger):
             if logger:
                 logger.log(f"{pokemon.name} was retrieved to {player.name}'s hand.", color=Fore.CYAN)
             break
-
-
-def attach_energy_to_specific_pokemon(energy_zone, pokemon, energy_type, logger):
-    if energy_zone.get(energy_type, 0) > 0:
-        amount = 1
-        energy_zone[energy_type] -= amount
-        pokemon.energy[energy_type] = pokemon.energy.get(energy_type, 0) + amount
-        if logger:
-            logger.log(f"Attached {amount} {energy_type} energy to {pokemon.name}.", color=Fore.YELLOW)
 
 def counter_attack(attacker, damage, logger):
     if attacker.is_active and attacker.is_damaged:
