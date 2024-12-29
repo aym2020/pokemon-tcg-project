@@ -77,6 +77,21 @@ def handle_knockout(attacker, defender, attacking_player, defending_player, logg
         logger.critical(f"{defending_player.name} has no more Pokémon! {attacking_player.name} wins the game!")
         game.end_game(attacking_player.name)
 
+def has_sufficient_energy(attacker, attack, logger):
+    """
+    Check if the attacking Pokémon has sufficient energy to perform the attack.
+
+    :param attacker: The attacking Pokémon.
+    :param attack: The Attack object.
+    :param logger: Logger instance to log messages.
+    :return: True if the attacker has sufficient energy, False otherwise.
+    """
+    for energy_type, required_amount in attack.energy_required.items():
+        if attacker.energy.get(energy_type, 0) < required_amount:
+            logger.log(f"{attacker.name} does not have enough {energy_type} energy to perform {attack.damage} damage.", color=Fore.RED)
+            return False
+    return True
+
 def perform_attack(attacking_player, defending_player, logger, game):
     """
     Perform an attack during the current player's turn.
@@ -95,19 +110,13 @@ def perform_attack(attacking_player, defending_player, logger, game):
     # Select the first attack for simplicity
     attack = attacker.attacks[0]
 
-    # Check if the Pokémon has enough energy to perform the attack
-    for energy_type, required_amount in attack.energy_required.items():
-        if attacker.energy.get(energy_type, 0) < required_amount:
-            logger.log(f"{attacker.name} does not have enough {energy_type} energy to perform {attack.damage} damage.", color=Fore.RED)
-            return  # Skip the attack if energy is insufficient
-
-    # Calculate damage
-    damage = calculate_damage(attack, attacker, defender, logger)
-
-    # Apply damage
-    defender.current_hp = max(0, defender.current_hp - damage)
-    logger.log(f"{defender.name} took {damage} damage. Current HP: {defender.current_hp}/{defender.hp}", color=Fore.CYAN)
-
+    # Validate energy requirements
+    if not has_sufficient_energy(attacker, attack, logger):
+        return  # Skip the attack if energy is insufficient
+        
+    # Execute the attack
+    attack.execute_attack(attacker, defender, logger)
+    
     # Check for knockout
     if defender.current_hp == 0:
         handle_knockout(attacker, defender, attacking_player, defending_player, logger, game)

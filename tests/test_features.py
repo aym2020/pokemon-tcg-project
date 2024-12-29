@@ -173,7 +173,7 @@ class TestFeatures(unittest.TestCase):
         self.assertIn(squirtle, player2.discard_pile)
             
         # Check if Squirtle is knocked out
-        self.assertEqual(squirtle.current_hp, initial_hp_squirtle - (attack_damage_pikachu + 20)) # Squirtle HP = 50 - (30 + 20) = 0
+        self.assertEqual(squirtle.current_hp, max(0, initial_hp_squirtle - (attack_damage_pikachu + 20))) # Squirtle HP = 50 - (30 + 20) = 0
         
         # Check if the game ended correctly
         self.assertTrue(game.game_state["ended"], "The game should have ended.")
@@ -558,6 +558,41 @@ class TestFeatures(unittest.TestCase):
         self.assertTrue(result, "Charmander should evolve into Charmeleon.")
         self.assertEqual(player.active_pokemon.name, "Charmeleon", "The active Pokémon should now be Charmeleon.")
         self.assertIsNone(player.active_pokemon.status, "Evolving should clear status conditions.")
+    
+    def test_attack_effects_discard_energy(self):
+        """
+        Test that attack effects are correctly applied.
+        """
+        # Create Pokémon
+        charizard = PokemonCard("Charizard", "Fire", 200, "Water", is_ex=False, attacks=["200FFFF(discardOwnEnergy(2F))"], energy={"F": 4})
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"], energy={"W": 2})
+        pikachu = PokemonCard("Pikachu", "Electric", 40, "Fighting", is_ex=False, attacks=["20CC"])
+                
+        # Create players
+        player1 = Player("Ash", [charizard], ["Fire"])
+        player2 = Player("Gary", [squirtle], ["Water"])
+        
+        # Create game
+        game = Game(player1, player2, verbose=False)
+        
+        # Set the game to a random turn between 2 and 100
+        game.turn_count = random.randint(2, 100)
+            
+        # Set active Pokémon for each player 
+        player1.active_pokemon = charizard
+        player2.active_pokemon = squirtle
+        
+        # Set bench Pokémon for player 2
+        player2.bench = [pikachu]
+              
+        # Simulate fight
+        perform_attack(player1, player2, self.logger, game)
+        
+        # Check if the attack was successful
+        self.assertEqual(squirtle.current_hp, 0, "Squirtle should have 0 HP.")
+
+        # Check the number of Fire Energy attached to Charizard
+        self.assertEqual(charizard.energy["F"], 2, "Charizard should have 2 Fire Energy.")
           
 if __name__ == '__main__':
     unittest.main()

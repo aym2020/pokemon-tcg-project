@@ -30,33 +30,40 @@ class Attack:
         if effect_match:
             self.effect_string = effect_match.group(1)
 
-    def apply_effect(self, pokemon, logger=None):
+    def apply_effect(self, attacker, target, logger=None):
         """
         Apply the special effect of the attack, if any.
 
-        :param pokemon: The Pokémon on which the effect is applied.
+        :param target: The Pokémon on which the effect is applied.
         :param logger: Logger instance to log messages.
         """
         if self.effect_string:
             # Handle specific effects like discardEnergy or heal
-            if "discardEnergy" in self.effect_string:
-                match = re.match(r"discardEnergy\((\d+)([A-Z])\)", self.effect_string)
+            if "discardOwnEnergy" in self.effect_string:
+                match = re.match(r"discardOwnEnergy\((\d+)([A-Z])\)", self.effect_string)
                 if match:
                     amount = int(match.group(1))
                     energy_type = match.group(2)
-                    discard_energy(pokemon, energy_type=energy_type, amount=amount, logger=logger)
+                    discard_energy(attacker, energy_type=energy_type, amount=amount, logger=logger)
+
+            elif "discardTargetEnergy" in self.effect_string:
+                match = re.match(r"discardTargetEnergy\((\d+)([A-Z])\)", self.effect_string)
+                if match:
+                    amount = int(match.group(1))
+                    energy_type = match.group(2)
+                    discard_energy(target, energy_type=energy_type, amount=amount, logger=logger)
 
             elif "heal" in self.effect_string:
                 match = re.match(r"heal\((\d+)\)", self.effect_string)
                 if match:
                     amount = int(match.group(1))
-                    heal_damage(pokemon, amount=amount, logger=logger)
+                    heal_damage(attacker, amount=amount, logger=logger)
 
             elif "applyStatus" in self.effect_string:
                 match = re.match(r"applyStatus\((\w+)\)", self.effect_string)
                 if match:
                     status = match.group(1)
-                    apply_status_condition(pokemon, condition=status, logger=logger)
+                    apply_status_condition(target, condition=status, logger=logger)
 
             elif "flipCoins" in self.effect_string:
                 match = re.match(r"flipCoins\((\d+),(\w+),(\d+)\)", self.effect_string)
@@ -65,9 +72,9 @@ class Attack:
                     action_name = match.group(2)
                     amount = int(match.group(3))
                     if action_name == "dealDamage":
-                        flip_coins(number_of_flips, deal_damage, target=pokemon, amount=amount, logger=logger)
+                        flip_coins(number_of_flips, deal_damage, target=target, amount=amount, logger=logger)
                     elif action_name == "applyStatus":
-                        flip_coins(number_of_flips, apply_status_condition, target=pokemon, condition="Paralyzed", logger=logger)
+                        flip_coins(number_of_flips, apply_status_condition, target=target, condition="Paralyzed", logger=logger)
 
             elif "modifyDamage" in self.effect_string:
                 match = re.match(r"modifyDamage\(([-\d+]+)\)", self.effect_string)
@@ -75,7 +82,7 @@ class Attack:
                     modifier = int(match.group(1))
                     self.damage = modify_attack_damage(self.damage, modifier, logger=logger)
 
-    def execute_attack(self, target, logger=None):
+    def execute_attack(self, attacker, target, logger=None):
         """
         Execute the attack, dealing damage and applying effects.
 
@@ -86,7 +93,7 @@ class Attack:
         deal_damage(target, self.damage, logger=logger)
 
         # Apply special effects
-        self.apply_effect(target, logger=logger)
+        self.apply_effect(attacker, target, logger=logger)
 
     def __repr__(self):
         return (f"Damage: {self.damage}, Energy: {self.energy_required}, "
