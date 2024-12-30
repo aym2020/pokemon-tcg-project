@@ -17,8 +17,8 @@ deck2 = [
     PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"]),
     PokemonCard("Wartortle", "Water", 70, "Electric", is_ex=False, attacks=["40WW"], evolves_from="Squirtle"),
     PokemonCard("Blastoise", "Water", 180, "Electric", is_ex=True, attacks=["40"], evolves_from="Wartortle"),
-    TrainerCard("Potion", effect="Heal 20 damage from a Pokémon."),
-    TrainerCard("Red Card", effect="Shuffle opponent's hand into their deck and draw 3 cards."),
+    TrainerCard("Potion"),
+    TrainerCard("Misty"),
 ] * 4
 
 # Define energy colors
@@ -32,13 +32,17 @@ player2 = Player(name="Gary", deck=deck2, energy_colors=deck2_energy_colors)
 # Logger instance
 logger = Logger()
 
-# Set up AI for player 2
+# Set up AI for player 1 and player 2
 ai1 = BasicAI(player1, logger)
 ai2 = BasicAI(player2, logger)
 
 # Initialize the game
 game = Game(player1, player2, verbose=True, ai1=ai1, ai2=ai2)
 
-game.start_game()
-while not game.game_state["ended"]:
-    game.play_turn()
+def main():
+    game.start_game()
+    while not game.game_state["ended"]:
+        game.play_turn()
+
+if __name__ == "__main__":
+    main()

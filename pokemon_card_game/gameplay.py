@@ -133,7 +133,7 @@ def evolve_pokemon(player, basic_pokemon, evolution_card, logger, turn_count):
     """
     # Prevent evolution during the first turn
     if turn_count <= 1:
-        logger.log(f"{evolution_card.name} cannot evolve during the first turn.", color=Fore.RED)
+        logger.log(f"{basic_pokemon.name} cannot evolve during the first turn.", color=Fore.RED)
         return False
 
     # Check if the evolution hierarchy is correct

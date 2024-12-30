@@ -75,10 +75,8 @@ class PokemonCard(Card):
         self.paralysis_timer = 0
 
     def __repr__(self):
-        return (f"{self.name} (Pokemon) - Type: {self.type}, HP: {self.current_hp}/{self.hp}, "
-                f"Energy: {self.energy}, Weakness: {self.weakness}, EX: {self.is_ex}, "
-                f"Evolves From: {self.evolves_from}, "
-                f"Attacks: {[str(attack) for attack in self.attacks]}")
+        return (f"{self.name} - Type: {self.type}, HP: {self.current_hp}/{self.hp}, "
+                f"Energy: {self.energy}, Weakness: {self.weakness}")
 
 class TrainerCard(Card):
     def __init__(self, name, effect=None):

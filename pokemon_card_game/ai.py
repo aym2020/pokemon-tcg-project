@@ -1,6 +1,7 @@
 from pokemon_card_game.card import PokemonCard, TrainerCard, ObjectCard
-from pokemon_card_game.gameplay import perform_attack, attach_energy, generate_energy
+from pokemon_card_game.gameplay import perform_attack, attach_energy, generate_energy, evolve_pokemon
 from pokemon_card_game.objects_effects import object_effects
+from colorama import Fore
 
 class BasicAI:
     def __init__(self, player, logger):
@@ -9,32 +10,49 @@ class BasicAI:
 
     def play_turn(self, opponent, game):
         """
-        Execute the AI's turn logic.
+        Execute the AI's turn logic, respecting game constraints.
         :param opponent: The opposing Player object.
+        :param game: The Game instance for access to game state.
         """
-        # Play Pokémon if needed
-        if self.player.active_pokemon is None:
-            self.play_active_pokemon()
+        if game.turn_count == 0:
+            self.logger.log(f"{self.player.name}'s first turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
+            
+            # Play Pokémon if needed
+            self.play_pokemon_if_needed()
+            
+            # Fill bench
+            self.fill_bench()
+            
+            # Use Trainer or Object cards
+            self.use_trainer_or_object(opponent)
+            return
 
+        # Play Pokémon if needed
+        self.play_pokemon_if_needed()
+
+        # Fill bench
         self.fill_bench()
+
+        # Attempt evolution
+        self.evolve_pokemon(game.turn_count)
 
         # Attach energy to the active Pokémon
         self.attach_energy_to_active()
-
+        
         # Use Trainer or Object cards
         self.use_trainer_or_object(opponent)
 
         # Attack if possible
         self.attack(opponent, game)
 
-
-    def play_active_pokemon(self):
+    def play_pokemon_if_needed(self):
         """Set the active Pokémon if none exists."""
-        for card in self.player.hand:
-            if isinstance(card, PokemonCard) and not card.evolves_from:
-                self.player.play_pokemon(card, self.logger)
-                self.player.hand.remove(card)
-                break
+        if self.player.active_pokemon is None:
+            for card in self.player.hand:
+                if isinstance(card, PokemonCard) and not card.evolves_from:
+                    self.player.play_pokemon(card, self.logger)
+                    self.player.hand.remove(card)
+                    break
 
     def fill_bench(self):
         """Fill the bench with available Pokémon."""
@@ -43,6 +61,17 @@ class BasicAI:
                 if len(self.player.bench) < 3:
                     self.player.play_pokemon(card, self.logger)
                     self.player.hand.remove(card)
+
+    def evolve_pokemon(self, turn_count):
+        """Attempt to evolve Pokémon if possible."""
+        for card in self.player.hand[:]:
+            if isinstance(card, PokemonCard) and card.evolves_from:
+                basic_pokemon = next(
+                    (p for p in [self.player.active_pokemon] + self.player.bench if p and p.name == card.evolves_from),
+                    None
+                )
+                if basic_pokemon:
+                    evolve_pokemon(self.player, basic_pokemon, card, self.logger, turn_count)
 
     def attach_energy_to_active(self):
         """Attach energy to the active Pokémon if needed."""
@@ -66,6 +95,11 @@ class BasicAI:
                     self.player.hand.remove(card)
 
     def attack(self, opponent, game):
-        """Perform an attack if possible."""
+        """
+        Perform an attack if possible.
+        :param opponent: The opposing Player object.
+        :param game: The Game instance for access to turn count and rules.
+        """
         if self.player.active_pokemon:
-            perform_attack(self.player, opponent, self.logger, game)  # Pass the game instance
+            perform_attack(self.player, opponent, self.logger, game)
+

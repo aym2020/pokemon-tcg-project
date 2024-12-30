@@ -2,7 +2,6 @@ from random import randint, choice
 from colorama import Fore
 
 # Attack effects
-
 def deal_damage(target, amount, logger=None):
     """
     Deal damage to a target.

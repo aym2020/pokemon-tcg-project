@@ -19,11 +19,12 @@ This test case tests the following features:
 9. Attach energy to a Pokemon
 10. Pokemon has correct energy to attack
 11. Prevent evolution during first turn
-12. Prevent evolution of newly played Pokemon
-13. Prevent multiple evolutions in the same turn
-14. Allow evolution after one turn
-15. Validate evolution hierarchy
-16. Evolution clears status conditions
+12. Prevent evolution during second turn
+13. Prevent evolution of newly played Pokemon
+14. Prevent multiple evolutions in the same turn
+15. Allow evolution after one turn
+16. Validate evolution hierarchy
+17. Evolution clears status conditions
 """
 
 class TestFeatures(unittest.TestCase):
@@ -344,30 +345,6 @@ class TestFeatures(unittest.TestCase):
         self.assertTrue(game.game_state["ended"], "The game should have ended.")
         self.assertEqual(game.game_state["winner"], "Ash", "Ash should be the winner.")
         
-    def test_prevent_evolution_during_turn_zero(self):
-        """
-        Test that Pokémon cannot evolve during the turn 0.
-        """
-        # Create Pokémon
-        charmander = PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, subcategory="Basic")
-        charmeleon = PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, evolves_from="Charmander", subcategory="Stage 1")
-        
-        # Create a player
-        player = Player("Ash", [charmander, charmeleon], ["Fire"])
-        player.hand.append(charmeleon)  # Add Charmeleon to the player's hand
-        
-        # Create game
-        game = Game(player, None, verbose=False)
-        game.turn_count = 0  # Set the game to the first turn
-        
-        # Manually set the active Pokémon
-        player.active_pokemon = charmander
-
-        # Attempt to evolve Charmander into Charmeleon
-        self.logger.log("Simulating evolution on the first turn...")
-        result = evolve_pokemon(player, charmander, charmeleon, self.logger, game.turn_count)
-        self.assertFalse(result, "Charmander should not evolve during the first turn.")
-    
     def test_prevent_evolution_during_turn_one(self):
         """
         Test that Pokémon cannot evolve during the turn 1.
@@ -391,6 +368,30 @@ class TestFeatures(unittest.TestCase):
         self.logger.log("Simulating evolution on the first turn...")
         result = evolve_pokemon(player, charmander, charmeleon, self.logger, game.turn_count)
         self.assertFalse(result, "Charmander should not evolve during the first turn.")
+    
+    def test_allow_evolution_during_turn_two(self):
+        """
+        Test that Pokémon can evolve during the turn 2.
+        """
+        # Create Pokémon
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, subcategory="Basic")
+        charmeleon = PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, evolves_from="Charmander", subcategory="Stage 1")
+        
+        # Create a player
+        player = Player("Ash", [charmander, charmeleon], ["Fire"])
+        player.hand.append(charmeleon)  # Add Charmeleon to the player's hand
+        
+        # Create game
+        game = Game(player, None, verbose=False)
+        game.turn_count = 2  # Set the game to the second turn
+        
+        # Manually set the active Pokémon
+        player.active_pokemon = charmander
+
+        # Attempt to evolve Charmander into Charmeleon
+        self.logger.log("Simulating evolution on the second turn...")
+        result = evolve_pokemon(player, charmander, charmeleon, self.logger, game.turn_count)
+        self.assertTrue(result, "Charmander should evolve during the second turn.")
 
     def test_prevent_evolution_of_newly_played_pokemon(self):
         """
