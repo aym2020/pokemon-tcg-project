@@ -1,3 +1,4 @@
+from colorama import Fore
 from pokemon_card_game.effects import (
     heal_target,
     move_energy,
@@ -7,38 +8,50 @@ from pokemon_card_game.effects import (
     play_as_pokemon,
     retrieve_to_hand,
     attach_energy_to_specific_pokemon,
-    misty_effect
+    attach_energy_directly,
+    select_pokemon,
 )
 
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
-    "Misty": lambda player, opponent, logger: misty_effect(
-        player, logger, ai_decision_function=None
+    "Misty": lambda player, logger: misty_effect(
+        player,
+        logger=logger
     ),
-    "Blaine": lambda player, opponent, logger: boost_attack_damage(
-        [pokemon for pokemon in player.bench if pokemon.name in ["Ninetales", "Rapidash", "Magmar"]],
-        30,
-        logger
+    "Potion": lambda player, logger: potion_effect(
+        player,
+        logger=logger
     ),
-    "Giovanni": lambda player, opponent, logger: boost_attack_damage(
-        player.bench, 10, logger
-    ),
-    "Erika": lambda player, opponent, logger: heal_target(
-        player.active_pokemon, amount=50, logger=logger
-    ),
-    "Lt. Surge": lambda player, opponent, logger: move_energy(
-        source=player.bench, target=player.active_pokemon, energy_type="Lightning", logger=logger
-    ),
-    "Dome Fossil": lambda player, opponent, logger: play_as_pokemon(
-        card=player.active_pokemon, logger=logger
-    ),
-    "Koga": lambda player, opponent, logger: retrieve_to_hand(
-        player=player, card_name="Muk" if player.active_pokemon.name == "Muk" else "Weezing", logger=logger
-    ),
-    "Sabrina": lambda player, opponent, logger: switch_opponent_pokemon(
-        opponent, logger=logger
-    ),
-    "Brock": lambda player, opponent, logger: attach_energy_to_specific_pokemon(
-        energy_zone=player.energy, pokemon=player.active_pokemon, energy_type="Fighting", logger=logger
-    )
 }
+
+def misty_effect(target, logger=None):
+    """
+    Flip coins until tails and attach Water Energy for each heads to the target Pokémon.
+    :param target: The Pokémon to receive the energy.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"Applying Misty effect to {target.name}.", color=Fore.CYAN)
+
+    # Flip coins and count heads
+    heads_count = flip_coins_until_tails(logger)
+
+    # Attach generated energy based on the number of heads
+    attach_energy_directly(target, "W", heads_count, logger)
+
+
+def potion_effect(target, logger=None):
+    """
+    Heal 20 HP from the target Pokémon.
+    :param target: The Pokémon to heal.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"Applying Potion effect to {target.name}.", color=Fore.CYAN)
+
+    # Heal the target Pokémon
+    heal_target(target, amount=20, logger=logger)
+
+    # Log the result
+    if logger:
+        logger.log(f"Healed {target.name} by 20 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)

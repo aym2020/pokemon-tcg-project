@@ -85,15 +85,6 @@ class BasicAI:
                         attach_energy(active, etype, 1, self.logger)
                         break
 
-    def use_trainer_or_object(self, opponent):
-        """Play Trainer or Object cards if applicable."""
-        for card in self.player.hand[:]:
-            if isinstance(card, TrainerCard) or isinstance(card, ObjectCard):
-                effect_function = object_effects.get(card.name)
-                if effect_function:
-                    effect_function(self.player, opponent, self.logger)
-                    self.player.hand.remove(card)
-
     def attack(self, opponent, game):
         """
         Perform an attack if possible.
@@ -102,4 +93,53 @@ class BasicAI:
         """
         if self.player.active_pokemon:
             perform_attack(self.player, opponent, self.logger, game)
+    
+    def use_trainer_or_object(self, opponent):
+        """Play Trainer or Object cards if applicable."""
+        for card in self.player.hand[:]:
+            if isinstance(card, TrainerCard) or isinstance(card, ObjectCard):
+                effect_function = object_effects.get(card.name)
+                if effect_function:
+                    target = self.select_target_for_card(card)
+                    if target:  # Only play the card if a valid target exists
+                        effect_function(target, logger=self.logger)
+                        self.player.hand.remove(card)
+
+    def select_target_for_card(self, card):
+        """
+        Determine the appropriate target for a Trainer or Object card.
+        :param card: The card being played.
+        :return: The selected target Pokémon or None if no valid target exists.
+        """
+        if card.name == "Misty":
+            # Ensure there is at least one Water Pokémon
+            water_pokemon = [
+                p for p in [self.player.active_pokemon] + self.player.bench
+                if p and p.type == "Water"
+            ]
+            return self.ai_decision(water_pokemon) if water_pokemon else None
+
+        elif card.name == "Potion":
+            # Ensure there is at least one damaged Pokémon
+            damaged_pokemon = [
+                p for p in [self.player.active_pokemon] + self.player.bench
+                if p and p.current_hp < p.hp
+            ]
+            return self.ai_decision(damaged_pokemon) if damaged_pokemon else None
+
+        # Add other cards here as needed
+        return None
+
+    def ai_decision(self, pokemon_list):
+        """
+        AI logic to select a Pokémon from a list.
+        Defaults to the first Pokémon if no complex logic is implemented.
+        :param pokemon_list: List of Pokémon to choose from.
+        :return: The selected Pokémon.
+        """
+        if not pokemon_list:
+            return None
+        # For now, simply pick the Pokémon with the lowest HP
+        return min(pokemon_list, key=lambda p: p.current_hp)
+
 

@@ -60,30 +60,6 @@ def attach_energy_directly(target, energy_type, amount, logger=None):
         if logger:
             logger.log(f"Attached 1 {energy_type} energy to {target.name}.", color=Fore.YELLOW)
         
-def misty_effect(player, logger=None, ai_decision_function=None):
-    """
-    Choose 1 Water Pokémon, flip coins until tails, and attach Water Energy for each heads.
-    :param player: The Player object.
-    :param logger: Logger instance to log messages.
-    :param ai_decision_function: Optional function for AI to choose the target Pokémon.
-    """
-    # Select a Water Pokémon
-    target = select_pokemon(
-        [player.active_pokemon] + player.bench,
-        condition=lambda p: p.type == "Water",
-        logger=logger,
-        ai_decision_function=ai_decision_function
-    )
-
-    if not target:
-        return
-
-    # Flip coins and count heads
-    heads_count = flip_coins_until_tails(logger)
-
-    # Attach generated energy based on the number of heads
-    attach_energy_directly(target, "W", heads_count, logger)
-
 def select_pokemon(pokemon_list, condition, active_pokemon=None, logger=None, ai_decision_function=None):
     """
     Select a Pokémon from the list based on a condition or AI decision.

@@ -9,8 +9,8 @@ deck1 = [
     PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, attacks=["30F"]),
     PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, attacks=["50FF"], evolves_from="Charmander"),
     PokemonCard("Charizard", "Fire", 200, "Water", is_ex=True, attacks=["200FFFF(discardEnergy(2F))"], evolves_from="Charmeleon"),
-    TrainerCard("Potion", effect="Heal 20 damage from a Pokémon."),
-    TrainerCard("Red Card", effect="Shuffle opponent's hand into their deck and draw 3 cards."),
+    TrainerCard("Misty"),
+    TrainerCard("Potion"),
 ] * 4
 
 deck2 = [
