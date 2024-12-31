@@ -16,7 +16,6 @@ def misty_effect(target, logger=None):
     # Attach generated energy based on the number of heads
     attach_energy_directly(target, "W", heads_count, logger)
 
-
 def potion_effect(target, logger=None):
     """
     Heal 20 HP from the target Pokémon.
@@ -58,18 +57,56 @@ def pokeball_effect(player, logger=None):
     # Shuffle the remaining deck
     shuffle_deck(player.deck, logger)
 
+def professors_research_effect(player, logger=None):
+    """
+    Draw 2 cards from the player's deck using the draw_cards utility.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"{player.name} plays Professor's Research to draw 2 cards.", color=Fore.CYAN)
+
+    draw_cards(player, 2, logger)
+
+def blaine_effect(player, logger=None):
+    """
+    During this turn, attacks used by your Ninetales, Rapidash, or Magmar do +30 damage to the opponent's Active Pokémon.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"{player.name} plays Blaine to boost damage for Ninetales, Rapidash, or Magmar.", color=Fore.CYAN)
+
+    # Find Ninetales, Rapidash, and Magmar on the active spot and the bench
+    for pokemon in [player.active_pokemon] + player.bench:
+        if pokemon.name in ["Ninetales", "Rapidash", "Magmar"]:
+            boost_attack_damage([pokemon], 30, logger)
+
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
     "Misty": {
         "effect": misty_effect,
-        "requires_target": True
+        "requires_target": True,
+        "eligibility_check": True
     },
     "Potion": {
         "effect": potion_effect,
-        "requires_target": True
+        "requires_target": True,
+        "eligibility_check": True
     },
     "Poké Ball": {
         "effect": pokeball_effect,
-        "requires_target": False
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Professor's Research": {
+        "effect": professors_research_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Blaine": {
+        "effect": blaine_effect,
+        "requires_target": False,
+        "eligibility_check": True
     },
 }

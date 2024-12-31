@@ -23,15 +23,16 @@ class BasicAI:
             # Fill bench
             self.fill_bench()
             
-            # Use Trainer or Object cards
-            self.use_trainer_or_object(opponent)
+            # Use Object cards (no limit)
+            self.use_object_card(opponent)
+            
+            # Use Trainer card (only one per turn)
+            self.use_trainer_card()
             return
 
-        # Play Pokémon if needed
-        self.play_pokemon_if_needed()
-
-        # Fill bench
-        self.fill_bench()
+        # Draw a card at the start of the turn (except Turn 1)
+        if game.turn_count > 0:
+            self.draw_card()
 
         # Attempt evolution
         self.evolve_pokemon(game.turn_count)
@@ -39,11 +40,26 @@ class BasicAI:
         # Attach energy to the active Pokémon
         self.attach_energy_to_active()
         
-        # Use Trainer or Object cards
-        self.use_trainer_or_object(opponent)
+        # Use Object cards (no limit)
+        self.use_object_card(opponent)
+        
+        # Use Trainer card (only one per turn)
+        self.use_trainer_card()
+            
+        # Play Pokémon if needed
+        self.play_pokemon_if_needed()
+
+        # Fill bench
+        self.fill_bench()
 
         # Attack if possible
         self.attack(opponent, game)
+    
+    def draw_card(self):
+        """Draw a card at the start of the AI's turn."""
+        card = self.player.draw_card(self.logger)
+        if card:
+            self.logger.log(f"{self.player.name} drew {card.name}.", color=Fore.GREEN)
 
     def play_pokemon_if_needed(self):
         """Set the active Pokémon if none exists."""
@@ -94,22 +110,57 @@ class BasicAI:
         if self.player.active_pokemon:
             perform_attack(self.player, opponent, self.logger, game)
     
-    def use_trainer_or_object(self, opponent):
-        """Play Trainer or Object cards if applicable."""
+    def use_trainer_card(self):
+        """Play a single Trainer card if applicable."""
+        if self.player.trainer_card_played:
+            self.logger.log(f"{self.player.name} has already played a Trainer card this turn.", color=Fore.RED)
+            return
+
         for card in self.player.hand[:]:
-            if isinstance(card, TrainerCard) or isinstance(card, ObjectCard):
+            if isinstance(card, TrainerCard):
                 effect_info = object_effects.get(card.name)
                 if effect_info:
                     effect = effect_info["effect"]
                     requires_target = effect_info["requires_target"]
+                    eligibility_check = effect_info["eligibility_check"]
+
+                    # Check eligibility if required
+                    if eligibility_check and not self.is_card_eligible(card):
+                        continue  # Skip the card if eligibility fails
 
                     if requires_target:
                         target = self.select_target_for_card(card)
-                        if target:  # Only play the card if a valid target exists
+                        if target:
+                            effect(target, logger=self.logger)
+                            self.player.hand.remove(card)
+                            self.player.trainer_card_played = True
+                            return  # Only one Trainer card allowed per turn
+                    else:
+                        effect(self.player, logger=self.logger)
+                        self.player.hand.remove(card)
+                        self.player.trainer_card_played = True
+                        return  # Only one Trainer card allowed per turn
+
+    def use_object_card(self, opponent):
+        """Play Object cards, which have no limit on usage."""
+        for card in self.player.hand[:]:
+            if isinstance(card, ObjectCard):
+                effect_info = object_effects.get(card.name)
+                if effect_info:
+                    effect = effect_info["effect"]
+                    requires_target = effect_info["requires_target"]
+                    eligibility_check = effect_info["eligibility_check"]
+
+                    # Check eligibility if required
+                    if eligibility_check and not self.is_card_eligible(card):
+                        continue  # Skip the card if eligibility fails
+
+                    if requires_target:
+                        target = self.select_target_for_card(card)
+                        if target:
                             effect(target, logger=self.logger)
                             self.player.hand.remove(card)
                     else:
-                        # No target required, directly apply the effect
                         effect(self.player, logger=self.logger)
                         self.player.hand.remove(card)
                         
@@ -135,8 +186,32 @@ class BasicAI:
             ]
             return self.ai_decision(damaged_pokemon) if damaged_pokemon else None
 
+        elif card.name == "Blaine":
+            # Ensure there is at least one Ninetales, Rapidash, or Magmar
+            eligible_pokemon = [
+                p for p in [self.player.active_pokemon] + self.player.bench
+                if p and p.name in ["Ninetales", "Rapidash", "Magmar"]
+            ]
+            return self.ai_decision(eligible_pokemon) if eligible_pokemon else None
+
         # Add other cards here as needed
         return None
+    
+    def is_card_eligible(self, card):
+        """Determine if a card is eligible to be played."""
+        if card.name == "Blaine":
+            return any(
+                p.name in ["Ninetales", "Rapidash", "Magmar"] for p in [self.player.active_pokemon] + self.player.bench
+            )
+        if card.name == "Misty":
+            return any(
+                p.type == "Water" for p in [self.player.active_pokemon] + self.player.bench
+            )
+        if card.name == "Potion":
+            return any(
+                p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
+            )
+        return True  # Default to eligible for cards without specific conditions
 
     def ai_decision(self, pokemon_list):
         """

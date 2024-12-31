@@ -25,6 +25,9 @@ This test case tests the following features:
 15. Allow evolution after one turn
 16. Validate evolution hierarchy
 17. Evolution clears status conditions
+18. Draw a card at the start of the turn
+19. Prevent drawing a card on turn 1
+20. Draw a card on turn 2
 """
 
 class TestFeatures(unittest.TestCase):
@@ -559,6 +562,65 @@ class TestFeatures(unittest.TestCase):
         self.assertTrue(result, "Charmander should evolve into Charmeleon.")
         self.assertEqual(player.active_pokemon.name, "Charmeleon", "The active Pokémon should now be Charmeleon.")
         self.assertIsNone(player.active_pokemon.status, "Evolving should clear status conditions.")
+    
+    def test_draw_card_at_start_of_turn(self):
+        """
+        Test that a player draws a card at the start of their turn.
+        """
+        # Create a pokemon
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, subcategory="Basic")
+        
+        # Create a player
+        player = Player("Ash", [charmander, charmander], ["Fire"])
+        
+        # Draw a card
+        player.draw_card(self.logger)
+        
+        # Assertions
+        self.assertEqual(len(player.hand), 1, "Player should have 1 card in their hand.")
+    
+    def test_prevent_drawing_card_on_turn_one(self):
+        """
+        Test that a player cannot draw a card on the first turn.
+        """
+        # Create a player
+        player = Player("Ash", [], ["Fire"])
+        
+        # Create game
+        game = Game(player, None, verbose=False)
+        
+        # Set the game to a random turn between 2 and 100
+        game.turn_count = 1
+        
+        # Attempt to draw a card
+        player.draw_card(self.logger)
+        
+        # Assertions
+        self.assertEqual(len(player.hand), 0, "Player should not draw a card on the first turn.")
+    
+    def test_draw_card_on_turn_two(self):
+        """
+        Test that a player draws a card on the second turn.
+        """
+        # Create a pokemon
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, subcategory="Basic")
+        
+        # Create a player
+        player = Player("Ash", [charmander, charmander], ["Fire"])
+        
+         # Create game
+        game = Game(player, None, verbose=False)
+        
+        # Set the game to a random turn between 2 and 100
+        game.turn_count = 2
+        
+        # Attempt to draw a card
+        player.draw_card(self.logger)
+        
+        # Assertions
+        self.assertEqual(len(player.hand), 1, "Player should draw a card on the second turn.")
+    
+   
               
 if __name__ == '__main__':
     unittest.main()

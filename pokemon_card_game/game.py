@@ -100,6 +100,9 @@ class Game:
 
         # Clear newly played Pokémon
         current_player.clear_newly_played_and_evolved_pokemons()
+        
+        # Clear the trainer card played flag
+        current_player.trainer_card_played = False
 
         # Log the turn transition
         self.logger.log(f"End of turn {self.turn_count}. Next turn: {self.players[self.current_turn].name}'s turn.", color=Fore.MAGENTA)
@@ -137,6 +140,8 @@ class Game:
         self.logger.log(f"{opponent.name}'s Active: {opponent.active_pokemon}", color=Fore.BLUE)
         self.logger.log(f"{current_player.name}'s Bench: {[p.name for p in current_player.bench]}", color=Fore.YELLOW)
         self.logger.log(f"{opponent.name}'s Bench: {[p.name for p in opponent.bench]}", color=Fore.YELLOW)
+        self.logger.log(f"{current_player.name}'s Newly Played: {[p.name for p in current_player.newly_played_pokemons]}", color=Fore.YELLOW)
+        self.logger.log(f"{current_player.name}'s Newly Evolved: {[p.name for p in current_player.newly_evolved_pokemons]}", color=Fore.YELLOW)
 
         # Let the AI play the turn with enforced constraints
         self.ais[self.current_turn].play_turn(opponent, self)

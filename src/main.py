@@ -6,12 +6,11 @@ from pokemon_card_game.ai import BasicAI
 
 # Create decks
 deck1 = [
-    PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, attacks=["30F"], subcategory="Basic"),
-    PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, attacks=["50FF"], evolves_from="Charmander", subcategory="Stage 1"),
-    PokemonCard("Charizard", "Fire", 200, "Water", is_ex=True, attacks=["200FFFF(discardEnergy(2F))"], evolves_from="Charmeleon", subcategory="Stage 2"),
+    PokemonCard("Ponyta", "Fire", 60, "Water", is_ex=False, attacks=["20F"], subcategory="Basic"),
+    PokemonCard("Rapidash", "Fire", 100, "Water", is_ex=False, attacks=["40F"], evolves_from="Ponyta", subcategory="Stage 1"),
     ObjectCard("Poké Ball"),
-    ObjectCard("Potion"),
-] * 4
+    TrainerCard("Blaine"),
+] * 5
 
 deck2 = [
     PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"], subcategory="Basic"),
@@ -21,13 +20,19 @@ deck2 = [
     TrainerCard("Misty"),
 ] * 4
 
+deck3 = [PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"], subcategory="Basic"),
+         TrainerCard("Misty"),
+         TrainerCard("Misty"),
+         TrainerCard("Misty"),
+         TrainerCard("Misty")]
+
 # Define energy colors
 deck1_energy_colors = ["F"]
 deck2_energy_colors = ["W"]
 
 # Create players
 player1 = Player(name="Ash", deck=deck1, energy_colors=deck1_energy_colors)
-player2 = Player(name="Gary", deck=deck2, energy_colors=deck2_energy_colors)
+player2 = Player(name="Gary", deck=deck3, energy_colors=deck2_energy_colors)
 
 # Logger instance
 logger = Logger()

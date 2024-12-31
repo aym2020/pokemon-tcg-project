@@ -14,6 +14,7 @@ class Player:
         self.energy_colors = energy_colors
         self.newly_played_pokemons = []  # Track Pokémon played this turn
         self.newly_evolved_pokemons = [] # Track Pokémon evolved this turn
+        self.trainer_card_played = False  # Tracks Trainer card usage
 
     def draw_card(self, logger):
         """
@@ -130,6 +131,10 @@ class Player:
         """Clear the list of newly played Pokémon at the end of the turn."""
         self.newly_played_pokemons.clear()
         self.newly_evolved_pokemons.clear()
+    
+    def reset_turn_flags(self):
+        """Reset flags at the end of the turn."""
+        self.trainer_card_played = False
 
     def __repr__(self):
         return (f"{self.name} - Active: {self.active_pokemon}, "

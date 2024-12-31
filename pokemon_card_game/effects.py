@@ -166,3 +166,23 @@ def shuffle_deck(deck, logger=None):
     random.shuffle(deck)
     if logger:
         logger.log("Shuffled the deck.", color=Fore.YELLOW)
+
+def draw_cards(player, number_of_cards, logger=None):
+    """
+    Draw a specified number of cards from the player's deck.
+    :param player: The Player object.
+    :param number_of_cards: Number of cards to draw.
+    :param logger: Logger instance to log messages.
+    """
+    for _ in range(number_of_cards):
+        if player.deck:
+            card = player.deck.pop(0)
+            player.hand.append(card)
+            if logger:
+                logger.log(f"{player.name} drew {card.name}.", color=Fore.GREEN)
+        else:
+            if logger:
+                logger.log(f"{player.name} cannot draw more cards; the deck is empty.", color=Fore.RED)
+            break
+
+

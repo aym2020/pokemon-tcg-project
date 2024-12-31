@@ -38,6 +38,7 @@ class PokemonCard(Card):
         self.resistance = resistance
         self.status = status
         self.paralysis_timer = paralysis_timer
+        self.damage_boost = 0 
 
     def apply_status_effects(self, logger):
         """

@@ -92,6 +92,13 @@ class Attack:
         """
         # Calculate damage with weakness
         damage = self.damage
+        damage_boost = getattr(attacker, "damage_boost", 0)
+        
+        if damage_boost>0:
+            damage += damage_boost
+            if logger:
+                logger.log(f"{attacker.name}'s damage boosted by {damage_boost}!", color=Fore.MAGENTA)
+        
         if target.weakness == attacker.type:
             damage += 20  # Apply the weakness bonus
             if logger:
