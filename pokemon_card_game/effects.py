@@ -1,5 +1,6 @@
 from colorama import Fore
 import random
+from pokemon_card_game.card import PokemonCard
 
 def heal_target(target, amount=20, logger=None):
     if hasattr(target, "current_hp") and hasattr(target, "hp"):
@@ -129,3 +130,39 @@ def counter_attack(attacker, damage, logger):
         attacker.current_hp = max(0, attacker.current_hp - damage)
         if logger:
             logger.log(f"{attacker.name} took {damage} damage.", color=Fore.MAGENTA)
+
+def find_random_basic_pokemon(deck, logger=None):
+    """
+    Find and remove a random Basic Pokémon from the deck.
+    :param deck: List of cards in the player's deck.
+    :param logger: Logger instance to log messages.
+    :return: The selected Basic Pokémon or None if no Basic Pokémon found.
+    """
+    # Filter Basic Pokémon from the deck
+    basic_pokemon = [card for card in deck if isinstance(card, PokemonCard) and card.subcategory == "Basic"]
+
+    if not basic_pokemon:
+        if logger:
+            logger.log("No Basic Pokémon found in the deck.", color=Fore.RED)
+        return None
+
+    # Randomly select one Basic Pokémon
+    selected_pokemon = random.choice(basic_pokemon)
+
+    # Remove the selected Pokémon from the deck
+    deck.remove(selected_pokemon)
+
+    if logger:
+        logger.log(f"Selected Basic Pokémon: {selected_pokemon.name}.", color=Fore.CYAN)
+
+    return selected_pokemon
+
+def shuffle_deck(deck, logger=None):
+    """
+    Shuffle the player's deck.
+    :param deck: List of cards in the player's deck.
+    :param logger: Logger instance to log messages.
+    """
+    random.shuffle(deck)
+    if logger:
+        logger.log("Shuffled the deck.", color=Fore.YELLOW)

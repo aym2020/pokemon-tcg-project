@@ -98,13 +98,21 @@ class BasicAI:
         """Play Trainer or Object cards if applicable."""
         for card in self.player.hand[:]:
             if isinstance(card, TrainerCard) or isinstance(card, ObjectCard):
-                effect_function = object_effects.get(card.name)
-                if effect_function:
-                    target = self.select_target_for_card(card)
-                    if target:  # Only play the card if a valid target exists
-                        effect_function(target, logger=self.logger)
-                        self.player.hand.remove(card)
+                effect_info = object_effects.get(card.name)
+                if effect_info:
+                    effect = effect_info["effect"]
+                    requires_target = effect_info["requires_target"]
 
+                    if requires_target:
+                        target = self.select_target_for_card(card)
+                        if target:  # Only play the card if a valid target exists
+                            effect(target, logger=self.logger)
+                            self.player.hand.remove(card)
+                    else:
+                        # No target required, directly apply the effect
+                        effect(self.player, logger=self.logger)
+                        self.player.hand.remove(card)
+                        
     def select_target_for_card(self, card):
         """
         Determine the appropriate target for a Trainer or Object card.

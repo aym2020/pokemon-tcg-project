@@ -1,28 +1,5 @@
 from colorama import Fore
-from pokemon_card_game.effects import (
-    heal_target,
-    move_energy,
-    switch_opponent_pokemon,
-    flip_coins_until_tails,
-    boost_attack_damage,
-    play_as_pokemon,
-    retrieve_to_hand,
-    attach_energy_to_specific_pokemon,
-    attach_energy_directly,
-    select_pokemon,
-)
-
-# Mapping Trainer cards to their corresponding effects
-object_effects = {
-    "Misty": lambda player, logger: misty_effect(
-        player,
-        logger=logger
-    ),
-    "Potion": lambda player, logger: potion_effect(
-        player,
-        logger=logger
-    ),
-}
+from pokemon_card_game.effects import *
 
 def misty_effect(target, logger=None):
     """
@@ -55,3 +32,44 @@ def potion_effect(target, logger=None):
     # Log the result
     if logger:
         logger.log(f"Healed {target.name} by 20 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)
+
+def pokeball_effect(player, logger=None):
+    """
+    Find a random Basic Pokémon from the deck, add it to the player's hand, and shuffle the deck.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"{player.name} plays Poké Ball.", color=Fore.CYAN)
+
+    # Find a random Basic Pokémon
+    selected_pokemon = find_random_basic_pokemon(player.deck, logger)
+
+    if not selected_pokemon:
+        if logger:
+            logger.log("Poké Ball has no effect as no Basic Pokémon was found.", color=Fore.RED)
+        return
+
+    # Add the selected Pokémon to the player's hand
+    player.hand.append(selected_pokemon)
+    if logger:
+        logger.log(f"{selected_pokemon.name} was added to {player.name}'s hand.", color=Fore.GREEN)
+
+    # Shuffle the remaining deck
+    shuffle_deck(player.deck, logger)
+
+# Mapping Trainer cards to their corresponding effects
+object_effects = {
+    "Misty": {
+        "effect": misty_effect,
+        "requires_target": True
+    },
+    "Potion": {
+        "effect": potion_effect,
+        "requires_target": True
+    },
+    "Poké Ball": {
+        "effect": pokeball_effect,
+        "requires_target": False
+    },
+}

@@ -6,18 +6,18 @@ from pokemon_card_game.ai import BasicAI
 
 # Create decks
 deck1 = [
-    PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, attacks=["30F"]),
-    PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, attacks=["50FF"], evolves_from="Charmander"),
-    PokemonCard("Charizard", "Fire", 200, "Water", is_ex=True, attacks=["200FFFF(discardEnergy(2F))"], evolves_from="Charmeleon"),
-    TrainerCard("Misty"),
-    TrainerCard("Potion"),
+    PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, attacks=["30F"], subcategory="Basic"),
+    PokemonCard("Charmeleon", "Fire", 90, "Water", is_ex=False, attacks=["50FF"], evolves_from="Charmander", subcategory="Stage 1"),
+    PokemonCard("Charizard", "Fire", 200, "Water", is_ex=True, attacks=["200FFFF(discardEnergy(2F))"], evolves_from="Charmeleon", subcategory="Stage 2"),
+    ObjectCard("Poké Ball"),
+    ObjectCard("Potion"),
 ] * 4
 
 deck2 = [
-    PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"]),
-    PokemonCard("Wartortle", "Water", 70, "Electric", is_ex=False, attacks=["40WW"], evolves_from="Squirtle"),
-    PokemonCard("Blastoise", "Water", 180, "Electric", is_ex=True, attacks=["40"], evolves_from="Wartortle"),
-    TrainerCard("Potion"),
+    PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"], subcategory="Basic"),
+    PokemonCard("Wartortle", "Water", 70, "Electric", is_ex=False, attacks=["40WW"], evolves_from="Squirtle", subcategory="Stage 1"),
+    PokemonCard("Blastoise", "Water", 180, "Electric", is_ex=True, attacks=["40"], evolves_from="Wartortle", subcategory="Stage 2"),
+    ObjectCard("Poké Ball"),
     TrainerCard("Misty"),
 ] * 4
 
