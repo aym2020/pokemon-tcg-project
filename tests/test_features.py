@@ -11,23 +11,24 @@ This test case tests the following features:
 1. Pokemon initialization
 2. Pokemon fight without weakness
 3. Pokemon fight with weakness
-4. Pokemon knockout
-5. Player gets point after knockout of a Pokemon
-6. Player gets two points after knockout of an EX Pokemon
-7. Player wins the game
-8. Energy of each Pokemon
-9. Attach energy to a Pokemon
-10. Pokemon has correct energy to attack
-11. Prevent evolution during first turn
-12. Prevent evolution during second turn
-13. Prevent evolution of newly played Pokemon
-14. Prevent multiple evolutions in the same turn
-15. Allow evolution after one turn
-16. Validate evolution hierarchy
-17. Evolution clears status conditions
-18. Draw a card at the start of the turn
-19. Prevent drawing a card on turn 1
-20. Draw a card on turn 2
+4. Pokemon fight with damage boost
+5. Pokemon knockout
+6. Player gets point after knockout of a Pokemon
+7. Player gets two points after knockout of an EX Pokemon
+8. Player wins the game
+9. Energy of each Pokemon
+10. Attach energy to a Pokemon
+11. Pokemon has correct energy to attack
+12. Prevent evolution during first turn
+13. Prevent evolution during second turn
+14. Prevent evolution of newly played Pokemon
+15. Prevent multiple evolutions in the same turn
+16. Allow evolution after one turn
+17. Validate evolution hierarchy
+18. Evolution clears status conditions
+19. Draw a card at the start of the turn
+20. Prevent drawing a card on turn 1
+21. Draw a card on turn 2
 """
 
 class TestFeatures(unittest.TestCase):
@@ -142,6 +143,42 @@ class TestFeatures(unittest.TestCase):
         # Check if HP has decreased
         self.assertEqual(charmander.current_hp, initial_hp_charmander - (attack_damage_squirtle + 20)) # Charmander HP = 60 - (20 + 20) = 20
     
+    def test_pokemon_fight_with_damage_boost(self):
+        """
+        Test that Pokémon fight correctly with damage boost.
+        """
+        # Create Pokémon
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", is_ex=False, attacks=["30F"])
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric", is_ex=False, attacks=["20W"])
+        
+        # Initial HP
+        initial_hp_charmander = charmander.hp
+        
+        # Attack damage
+        attack_damage_squirtle = squirtle.attacks[0].damage
+        damage_boost = 10
+        squirtle.damage_boost = damage_boost
+    
+        # Create players
+        player1 = Player("Gary", [squirtle], ["Water"])
+        player2 = Player("Ash", [charmander], ["Fire"])
+        
+        # Create game
+        game = Game(player1, player2, verbose=False)
+        
+        # Set active pokemon for each player
+        player1.active_pokemon = squirtle
+        player2.active_pokemon = charmander
+        
+        # Attach enough energy to perform the attack
+        attach_energy(squirtle, "W", 1, self.logger)
+
+        # Simulate fight
+        perform_attack(player1, player2, self.logger, game)
+
+        # Check if HP has decreased
+        self.assertEqual(charmander.current_hp, initial_hp_charmander - (attack_damage_squirtle + 20 + damage_boost)) # Charmander HP = 60 - (20 + 20) = 20
+      
     def test_pokemon_is_knocked_out(self):
         """
         Test that a Pokémon is knocked out when its HP reaches 0.

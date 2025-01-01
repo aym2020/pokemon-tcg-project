@@ -17,7 +17,7 @@ class Game:
         self.players = [player1, player2]
         self.ais = [ai1, ai2]  # Optional AI instances
         self.current_turn = None  # 0 for player1, 1 for player2
-        self.turn_count = 0
+        self.turn_count = 1
         self.logger = Logger(verbose=verbose)
         self.game_state = {"winner": None, "ended": False}  # Track game state
 
@@ -103,6 +103,9 @@ class Game:
         
         # Clear the trainer card played flag
         current_player.trainer_card_played = False
+    
+        # Clear the damage boost and reduction
+        current_player.clear_temporary_effects() 
 
         # Log the turn transition
         self.logger.log(f"End of turn {self.turn_count}. Next turn: {self.players[self.current_turn].name}'s turn.", color=Fore.MAGENTA)
@@ -112,7 +115,7 @@ class Game:
         Log the current state of the game.
         """
         player1, player2 = self.players
-        self.logger.log(f"Turn {self.turn_count + 1}: {self.players[self.current_turn].name}'s turn.", color=Fore.CYAN)
+        self.logger.log(f"Turn {self.turn_count}: {self.players[self.current_turn].name}'s turn.", color=Fore.CYAN)
         self.logger.log(f"Scores - {player1.name}: {player1.prizes}, {player2.name}: {player2.prizes}", color=Fore.GREEN)
         self.logger.log(f"{player1.name}'s Active: {player1.active_pokemon}, Bench: {[p.name for p in player1.bench]}", color=Fore.BLUE)
         self.logger.log(f"{player2.name}'s Active: {player2.active_pokemon}, Bench: {[p.name for p in player2.bench]}", color=Fore.BLUE)
@@ -130,7 +133,7 @@ class Game:
         opponent = self.players[1 - self.current_turn]
 
         # Separator for the turn
-        self.logger.separator(f"Turn {self.turn_count + 1}: {current_player.name}'s Turn", color=Fore.CYAN)
+        self.logger.separator(f"Turn {self.turn_count}: {current_player.name}'s Turn", color=Fore.CYAN)
 
         # Log game state
         self.logger.log(f"Scores - {current_player.name}: {current_player.prizes}, {opponent.name}: {opponent.prizes}", color=Fore.GREEN)

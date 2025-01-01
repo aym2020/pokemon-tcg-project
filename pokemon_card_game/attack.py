@@ -92,15 +92,22 @@ class Attack:
         """
         # Calculate damage with weakness
         damage = self.damage
+        damage_weakness = 20
         damage_boost = getattr(attacker, "damage_boost", 0)
+        damage_reduction = getattr(target, "damage_reduction", 0)
         
-        if damage_boost>0:
+        if damage_boost > 0:
             damage += damage_boost
             if logger:
                 logger.log(f"{attacker.name}'s damage boosted by {damage_boost}!", color=Fore.MAGENTA)
         
+        if damage_reduction > 0:
+            damage -= damage_reduction
+            if logger:
+                logger.log(f"{target.name}'s damage reduced by {damage_reduction}!", color=Fore.MAGENTA)
+        
         if target.weakness == attacker.type:
-            damage += 20  # Apply the weakness bonus
+            damage += damage_weakness  # Apply the weakness bonus
             if logger:
                 logger.log(f"{target.name}'s weakness to {attacker.type} adds 20 extra damage!", color=Fore.MAGENTA)
 
@@ -109,7 +116,6 @@ class Attack:
 
         # Apply special effects
         self.apply_effect(attacker, target, logger=logger)
-
 
     def __repr__(self):
         return (f"Damage: {self.damage}, Energy: {self.energy_required}, "

@@ -135,7 +135,17 @@ class Player:
     def reset_turn_flags(self):
         """Reset flags at the end of the turn."""
         self.trainer_card_played = False
-
+    
+    def clear_temporary_effects(self):
+        """
+        Clear temporary effects like damage reductions at the end of the turn.
+        """
+        for pokemon in [self.active_pokemon] + self.bench:
+            if hasattr(pokemon, "damage_reduction"):
+                pokemon.damage_reduction = 0  # Reset damage reduction
+            if hasattr(pokemon, "damage_boost"):
+                pokemon.damage_boost = 0  # Reset damage boost
+            
     def __repr__(self):
         return (f"{self.name} - Active: {self.active_pokemon}, "
                 f"Bench: {[p.name for p in self.bench]}, Hand: {[c.name for c in self.hand]}, "

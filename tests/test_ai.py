@@ -21,6 +21,7 @@ This test case tests the following features:
 10. Check that the AI does not use Blaine effect if there are no Ninetales, Rapidash, or Magmar.
 11. Check that the AI uses Professor's Research effect to draw 2 cards.
 12. Check that the AI can use only one Trainer card per turn.
+13. Check that the AI uses Blue effect to reduce damage for all Pokémon by 10.
 """
 
 class TestAI(unittest.TestCase):
@@ -173,7 +174,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Potion effect
-        ai.use_trainer_or_object(None)
+        ai.use_object_card()
         
         # Check that the Pokémon was healed
         self.assertGreater(squirtle.current_hp, hp_before, "Pokémon should be healed by Potion effect.")
@@ -182,6 +183,9 @@ class TestAI(unittest.TestCase):
         """
         Test that the AI does not use Potion effect if there are no Pokémon to heal.
         """
+        # Create pokémon
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric", energy={"W": 3})
+        
         # Create player
         player = Player("Ash", [], ["Water"])
         
@@ -191,11 +195,14 @@ class TestAI(unittest.TestCase):
         # Add Potion to player's hand
         player.hand.append(potion)
         
+        # Set up active Pokémon
+        player.active_pokemon = squirtle
+        
         # Create AI
         ai = BasicAI(player, self.logger)
         
         # Use Potion effect
-        ai.use_trainer_or_object(None)
+        ai.use_object_card()
         
         # Check that the Potion was not used
         self.assertIn(potion, player.hand, "Potion should not be used if there are no Pokémon to heal.")
@@ -224,7 +231,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Poké Ball effect
-        ai.use_trainer_or_object(None)
+        ai.use_object_card()
         
         # Check that a Pokémon was added to the player's hand
         self.assertEqual(len(player.hand), hand_size_before + 1, "Poké Ball should add a Pokémon to the player's hand.")
@@ -253,7 +260,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Misty effect
-        ai.use_trainer_or_object(None)
+        ai.use_trainer_card()
         
         # Check that no energy was attached
         self.assertEqual(charmander.energy.get("W", 0), 0, "Charmander should not receive Water Energy.")
@@ -286,7 +293,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Blaine effect
-        ai.use_trainer_or_object(None)
+        ai.use_trainer_card()
         
         # Check that the damage was boosted
         self.assertEqual(ninetales.damage_boost, damage_boost_before + 30, "Blaine effect should boost damage for Ninetales.")
@@ -315,7 +322,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Blaine effect
-        ai.use_trainer_or_object(None)
+        ai.use_trainer_card()
         
         # Check that the Blaine card was not used
         self.assertIn(blaine, player.hand, "Blaine effect should not be used if there are no Ninetales, Rapidash, or Magmar.")
@@ -344,7 +351,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Professor's Research effect
-        ai.use_trainer_or_object(None)
+        ai.use_trainer_card()
         
         # Check that 2 cards were drawn from the player's deck
         self.assertEqual(len(player.hand), hand_size_before + 2, "Professor's Research should draw 2 cards from the player's deck.")
@@ -373,12 +380,69 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Trainer card
-        ai.use_trainer_or_object(None)
+        ai.use_trainer_card()
         
         # Check that only one Trainer card was used
         self.assertTrue(player.trainer_card_played, "AI should have played one Trainer card.")
         self.assertEqual(len(player.hand), 1, "AI should have one Trainer card left in hand.")
-
+    
+    def test_ai_use_giovanni_effect(self):
+        """
+        Test that the AI uses Giovanni effect to boost damage for all Pokémon.
+        """
+        # Create Pokémon
+        ninetales = PokemonCard("Ninetales", "Fire", 90, "Water", attacks=["90FF"], energy={"F": 2})
+        magmar = PokemonCard("Magmar", "Fire", 70, "Water", attacks=["70F"], energy={"F": 1})
         
+        # Create player
+        player = Player("Ash", [ninetales, magmar], ["Fire"])
+        player.active_pokemon = ninetales
+        player.bench = [magmar]
+        
+        # Create Giovanni card
+        giovanni = TrainerCard("Giovanni", "Boost all Pokémon attacks by 10 damage.")
+        player.hand.append(giovanni)
+        
+        # Damage boost before playing Giovanni
+        ninetales_damage_boost_before = ninetales.damage_boost
+        magmar_damage_boost_before = magmar.damage_boost
+        
+        # Create AI
+        ai = BasicAI(player, self.logger)
+        
+        # Use Giovanni effect
+        ai.use_trainer_card()
+
+        # Check that the damage was boosted
+        self.assertEqual(ninetales.damage_boost, ninetales_damage_boost_before + 10, "Ninetales should receive a +10 damage boost.")
+        self.assertEqual(magmar.damage_boost, magmar_damage_boost_before + 10, "Magmar should receive a +10 damage boost.")
+
+    def test_ai_use_blue_effect(self):
+        """
+        Test that the AI uses Blue effect to reduce damage for all Pokémon by 10.
+        """
+        # Create Pokémon
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric")
+        bulbasaur = PokemonCard("Bulbasaur", "Grass", 60, "Fire")
+        
+        # Create player
+        player = Player("Ash", [], ["Water"])
+        
+        # Set active Pokémon and bench
+        player.active_pokemon = squirtle
+        player.bench = [bulbasaur]
+
+        # Add Blue card
+        blue = TrainerCard("Blue", "Reduce damage by 10 during opponent's turn.")
+        player.hand.append(blue)
+
+        ai = BasicAI(player, self.logger)
+        ai.use_trainer_card()
+
+        # Verify damage reduction
+        self.assertEqual(squirtle.damage_reduction, 10)
+        self.assertEqual(bulbasaur.damage_reduction, 10)
+
+            
         
         

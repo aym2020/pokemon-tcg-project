@@ -11,6 +11,8 @@ This test case tests the following features:
 2. Misty: Check that Misty's effect does nothing if there are no Water Pokémon.
 3. Professor's Research: Check that Professor's Research effect draws 2 cards from the player's deck.
 4. Blaine: Check that Blaine effect boosts damage for Ninetales, Rapidash, or Magmar.
+5. Giovanni: Check that Giovanni effect boosts damage for all Pokémon.
+6. Blue: Check that Blue effect reduces damage taken by all Pokémon during the opponent's next turn.
 """
     
 
@@ -149,6 +151,108 @@ class TestTrainerEffects(unittest.TestCase):
         
         # Check that Charmander did not receive a damage boost
         self.assertEqual(getattr(charmander, "damage_boost", 0), charmander_damage_boost, "Charmander should not receive a damage boost.")
+    
+    def test_giovanni_damage_boost(self):
+        """
+        Test that Giovanni effect boosts damage for all Pokémon.
+        """
+        # Create Pokémon
+        ninetales = PokemonCard("Ninetales", "Fire", 90, "Water", attacks=["90FF"], energy={"F": 2})
+        rapidash = PokemonCard("Rapidash", "Fire", 80, "Water", attacks=["40F"], energy={"F": 1})
+        magmar = PokemonCard("Magmar", "Fire", 70, "Water", attacks=["80FF(discardOwnEnergy(2F))"], energy={"F": 2})
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", attacks=["20F"], energy={"F": 1})
+        
+        # Create player
+        player = Player("Ash", [ninetales, rapidash, magmar, charmander], ["Water"])
+        
+        # Add Pokémon to player's bench
+        player.active_pokemon = ninetales
+        player.bench = [rapidash, magmar, charmander]
+        
+        # Number of damage boosts for each Pokémon before Giovanni's effect
+        ninetales_damage_boost = getattr(ninetales, "damage_boost", 0)
+        rapidash_damage_boost = getattr(rapidash, "damage_boost", 0)
+        magmar_damage_boost = getattr(magmar, "damage_boost", 0)
+        charmander_damage_boost = getattr(charmander, "damage_boost", 0)
+        
+        # Execute Giovanni's effect
+        giovanni_effect(player, self.logger)
+        
+        # Check that all Pokémon received a damage boost
+        self.assertGreater(getattr(ninetales, "damage_boost", 0), ninetales_damage_boost, "Ninetales should receive a damage boost.")
+        self.assertGreater(getattr(rapidash, "damage_boost", 0), rapidash_damage_boost, "Rapidash should receive a damage boost.")
+        self.assertGreater(getattr(magmar, "damage_boost", 0), magmar_damage_boost, "Magmar should receive a damage boost.")
+        self.assertGreater(getattr(charmander, "damage_boost", 0), charmander_damage_boost, "Charmander should receive a damage boost.")
+    
+    def test_blue_damage_reduction(self):
+        """
+        Test that Blue effect reduces damage taken by all Pokémon during the opponent's next turn.
+        """
+        # Create Pokémon
+        ninetales = PokemonCard("Ninetales", "Fire", 90, "Water", attacks=["90FF"], energy={"F": 2})
+        rapidash = PokemonCard("Rapidash", "Fire", 80, "Water", attacks=["40F"], energy={"F": 1})
+        magmar = PokemonCard("Magmar", "Fire", 70, "Water", attacks=["80FF(discardOwnEnergy(2F))"], energy={"F": 2})
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", attacks=["20F"], energy={"F": 1})
+        
+        # Create player
+        player = Player("Ash", [ninetales, rapidash, magmar, charmander], ["Water"])
+        
+        # Add Pokémon to player's bench
+        player.active_pokemon = ninetales
+        player.bench = [rapidash, magmar, charmander]
+        
+        # Number of damage reductions for each Pokémon before Blue's effect
+        ninetales_damage_reduction = getattr(ninetales, "damage_reduction", 0)
+        rapidash_damage_reduction = getattr(rapidash, "damage_reduction", 0)
+        magmar_damage_reduction = getattr(magmar, "damage_reduction", 0)
+        charmander_damage_reduction = getattr(charmander, "damage_reduction", 0)
+        
+        # Execute Blue's effect
+        blue_effect(player, self.logger)
+        
+        # Check that all Pokémon received a damage reduction
+        self.assertGreater(getattr(ninetales, "damage_reduction", 0), ninetales_damage_reduction, "Ninetales should receive a damage reduction.")
+        self.assertGreater(getattr(rapidash, "damage_reduction", 0), rapidash_damage_reduction, "Rapidash should receive a damage reduction.")
+        self.assertGreater(getattr(magmar, "damage_reduction", 0), magmar_damage_reduction, "Magmar should receive a damage reduction.")
+        self.assertGreater(getattr(charmander, "damage_reduction", 0), charmander_damage_reduction, "Charmander should receive a damage reduction.")
+
+    def test_blue_effect_in_fight(self):
+        """
+        Test that Blue's effect reduces damage during the opponent's next turn in a fight.
+        """
+        # Create Pokémon
+        ninetales = PokemonCard("Ninetales", "Fire", 90, "Water", attacks=["90FF"], energy={"F": 2})
+        pikachu = PokemonCard("Pikachu", "Electric", 50, "Ground", attacks=["20W"], energy={"E": 1})
+        
+        # Create players
+        player = Player("Ash", [ninetales], ["Fire"])
+        opponent = Player("Gary", [pikachu], ["Water"])
+        
+        # Set up active Pokémon
+        player.active_pokemon = ninetales
+        opponent.active_pokemon = pikachu
+        
+        # Apply Blue's effect
+        blue_effect(player, self.logger)
+        
+        # Number of damage reductions for Ninetales before the opponent's attack
+        ninetales_damage_reduction = getattr(ninetales, "damage_reduction", 0)
+        self.assertEqual(ninetales_damage_reduction, 10, "Ninetales should have a 10 damage reduction from Blue.")
+
+        # Opponent's Squirtle attacks Ninetales
+        attack = pikachu.attacks[0]  # Assume Squirtle has one attack
+        attack.execute_attack(pikachu, ninetales, logger=self.logger)
+
+        # Check that the damage reduction was applied
+        expected_damage = max(0, attack.damage - ninetales_damage_reduction)  # Reduced by 10
+        self.assertEqual(ninetales.current_hp, ninetales.hp - expected_damage,
+                         f"Ninetales should have taken {expected_damage} damage after reduction.")
+
+        # Clear temporary effects
+        player.clear_temporary_effects()
+
+        # Verify that damage reduction is removed after the turn
+        self.assertEqual(getattr(ninetales, "damage_reduction", 0), 0, "Damage reduction should be cleared after the turn.")
 
 if __name__ == "__main__":
     unittest.main()

@@ -82,6 +82,36 @@ def blaine_effect(player, logger=None):
         if pokemon.name in ["Ninetales", "Rapidash", "Magmar"]:
             boost_attack_damage([pokemon], 30, logger)
 
+def giovanni_effect(player, logger=None):
+    """
+    During this turn, attacks used by all of the player's Pokémon do +10 damage to the opponent's Active Pokémon.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"{player.name} plays Giovanni to boost damage for all Pokémon by 10.", color=Fore.CYAN)
+
+    # Apply damage boost to all player's Pokémon
+    for pokemon in [player.active_pokemon] + player.bench:
+        if hasattr(pokemon, "damage_boost"):
+            pokemon.damage_boost += 10  # Add +10 damage boost
+            if logger:
+                logger.log(f"{pokemon.name}'s attacks will do +10 damage this turn.", color=Fore.GREEN)
+
+def blue_effect(player, logger=None):
+    """
+    During your opponent's next turn, all of your Pokémon take −10 damage from attacks.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"{player.name} plays Blue, reducing damage taken by all Pokémon by 10 during the opponent's next turn.", color=Fore.CYAN)
+
+    # Apply damage reduction to all Pokémon
+    for pokemon in [player.active_pokemon] + player.bench:
+        if hasattr(pokemon, "damage_reduction"):
+            pokemon.damage_reduction += 10  # Add a temporary reduction of 10
+                
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
     "Misty": {
@@ -108,5 +138,15 @@ object_effects = {
         "effect": blaine_effect,
         "requires_target": False,
         "eligibility_check": True
+    },
+        "Giovanni": {
+        "effect": giovanni_effect,
+        "requires_target": False,
+        "eligibility_check": False  # Always eligible
+    },
+        "Blue": {
+        "effect": blue_effect,
+        "requires_target": False,
+        "eligibility_check": False  # Always eligible
     },
 }

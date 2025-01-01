@@ -14,24 +14,24 @@ class BasicAI:
         :param opponent: The opposing Player object.
         :param game: The Game instance for access to game state.
         """
-        if game.turn_count == 0:
+        if game.turn_count == 1:
             self.logger.log(f"{self.player.name}'s first turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
+            
+            # Use Object cards (no limit)
+            self.use_object_card()
+            
+            # Use Trainer card (only one per turn)
+            self.use_trainer_card()
             
             # Play Pokémon if needed
             self.play_pokemon_if_needed()
             
             # Fill bench
             self.fill_bench()
-            
-            # Use Object cards (no limit)
-            self.use_object_card(opponent)
-            
-            # Use Trainer card (only one per turn)
-            self.use_trainer_card()
             return
 
         # Draw a card at the start of the turn (except Turn 1)
-        if game.turn_count > 0:
+        if game.turn_count > 1:
             self.draw_card()
 
         # Attempt evolution
@@ -41,7 +41,7 @@ class BasicAI:
         self.attach_energy_to_active()
         
         # Use Object cards (no limit)
-        self.use_object_card(opponent)
+        self.use_object_card()
         
         # Use Trainer card (only one per turn)
         self.use_trainer_card()
@@ -141,7 +141,7 @@ class BasicAI:
                         self.player.trainer_card_played = True
                         return  # Only one Trainer card allowed per turn
 
-    def use_object_card(self, opponent):
+    def use_object_card(self):
         """Play Object cards, which have no limit on usage."""
         for card in self.player.hand[:]:
             if isinstance(card, ObjectCard):
