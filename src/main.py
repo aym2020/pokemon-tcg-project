@@ -20,13 +20,23 @@ deck2 = [
     TrainerCard("Giovanni"),
 ] * 4
 
+ # Deck Grass
+deck3 = [
+    PokemonCard("Bulbasaur", "Grass", 60, "Fire", is_ex=False, attacks=["20G"], subcategory="Basic"),
+    PokemonCard("Ivysaur", "Grass", 100, "Fire", is_ex=False, attacks=["40G"], evolves_from="Bulbasaur", subcategory="Stage 1"),
+    PokemonCard("Venusaur", "Grass", 180, "Fire", is_ex=True, attacks=["120GGG"], evolves_from="Ivysaur", subcategory="Stage 2"),
+    ObjectCard("Poké Ball"),
+    TrainerCard("Erika"),
+] * 4
+    
 # Define energy colors
 deck1_energy_colors = ["F"]
 deck2_energy_colors = ["W"]
+deck3_energy_colors = ["G"]
 
 # Create players
 player1 = Player(name="Ash", deck=deck1, energy_colors=deck1_energy_colors)
-player2 = Player(name="Gary", deck=deck2, energy_colors=deck2_energy_colors)
+player2 = Player(name="Gary", deck=deck3, energy_colors=deck3_energy_colors)
 
 # Logger instance
 logger = Logger()

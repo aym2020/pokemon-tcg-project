@@ -38,7 +38,7 @@ class BasicAI:
         self.evolve_pokemon(game.turn_count)
 
         # Attach energy to the active Pokémon
-        self.attach_energy_to_active()
+        self.manage_energy_attachment()
         
         # Use Object cards (no limit)
         self.use_object_card()
@@ -88,18 +88,96 @@ class BasicAI:
                 )
                 if basic_pokemon:
                     evolve_pokemon(self.player, basic_pokemon, card, self.logger, turn_count)
+                        
+    def manage_energy_attachment(self):
+        """Manage energy attachment for the active Pokémon, its potential evolution, or bench Pokémon."""
+        if self.player.active_pokemon:
+            # Prioritize the active Pokémon and its evolution
+            if self.attach_energy_to_active_or_evolution():
+                return
 
-    def attach_energy_to_active(self):
-        """Attach energy to the active Pokémon if needed."""
+        # Feed the bench if the active Pokémon doesn't need energy
+        self.attach_energy_to_bench()
+    
+    def attach_energy_to_active_or_evolution(self):
+        """
+        Attach energy to the active Pokémon if needed.
+        If the active Pokémon doesn't need energy, check its potential evolution.
+        :return: True if energy was attached; False otherwise.
+        """
         active = self.player.active_pokemon
-        if active:
-            for attack in active.attacks:
-                missing_energy = {etype: attack.energy_required.get(etype, 0) - active.energy.get(etype, 0)
-                                  for etype in attack.energy_required}
-                for etype, amount in missing_energy.items():
-                    if amount > 0 and etype in self.player.energy_colors:
-                        attach_energy(active, etype, 1, self.logger)
-                        break
+        if not active:
+            return False
+
+        # Check if the active Pokémon needs energy for its current attacks
+        for attack in active.attacks:
+            if self.attach_missing_energy(active, attack):
+                return True
+
+        # Check if the active Pokémon's evolutions in the deck require energy
+        evolutions, max_energy_required = self.get_evolution_and_max_energy_from_deck(active)
+        for energy_type, required_amount in max_energy_required.items():
+            missing_energy = required_amount - active.energy.get(energy_type, 0)
+            if missing_energy > 0 and energy_type in self.player.energy_colors:
+                attach_energy(active, energy_type, 1, self.logger)
+                return True
+        return False
+
+    def get_evolution_and_max_energy_from_deck(self, pokemon):
+        """
+        Get all potential evolution cards for a Pokémon from the player's deck 
+        and calculate the maximum energy required across all attacks.
+        :param pokemon: The Pokémon to check for potential evolution.
+        :return: A tuple (evolutions, max_energy_required).
+        """
+        evolutions = []
+        max_energy_required = {}
+
+        def collect_evolutions_and_energy(base_pokemon, deck):
+            """Recursively collect evolution cards and calculate max energy requirements."""
+            nonlocal max_energy_required
+
+            for card in deck:
+                if isinstance(card, PokemonCard) and card.evolves_from == base_pokemon.name:
+                    evolutions.append(card)
+
+                    # Update max energy requirements for this evolution stage
+                    for attack in card.attacks:
+                        for energy_type, amount in attack.energy_required.items():
+                            max_energy_required[energy_type] = max(
+                                max_energy_required.get(energy_type, 0), amount
+                            )
+
+                    # Continue searching for the next stage of evolution
+                    collect_evolutions_and_energy(card, deck)
+
+        # Start collecting evolutions and energy requirements
+        collect_evolutions_and_energy(pokemon, self.player.deck)
+        return evolutions, max_energy_required
+
+    def attach_energy_to_bench(self):
+        """Attach energy to Pokémon on the bench, prioritizing those with missing energy."""
+        for pokemon in self.player.bench:
+            for attack in pokemon.attacks:
+                if self.attach_missing_energy(pokemon, attack):
+                    return
+    
+    def attach_missing_energy(self, pokemon, attack):
+        """
+        Attach missing energy to a Pokémon for a given attack.
+        :param pokemon: The Pokémon to attach energy to.
+        :param attack: The attack being checked.
+        :return: True if energy was attached; False otherwise.
+        """
+        missing_energy = {
+            etype: attack.energy_required.get(etype, 0) - pokemon.energy.get(etype, 0)
+            for etype in attack.energy_required
+        }
+        for etype, amount in missing_energy.items():
+            if amount > 0 and etype in self.player.energy_colors:
+                attach_energy(pokemon, etype, 1, self.logger)
+                return True
+        return False
 
     def attack(self, opponent, game):
         """
@@ -193,6 +271,14 @@ class BasicAI:
                 if p and p.name in ["Ninetales", "Rapidash", "Magmar"]
             ]
             return self.ai_decision(eligible_pokemon) if eligible_pokemon else None
+    
+        elif card.name == "Erika":
+            # Select damaged Grass Pokémon
+            damaged_grass_pokemon = [
+            p for p in [self.player.active_pokemon] + self.player.bench
+            if p.type == "Grass" and p.current_hp < p.hp
+        ]
+        return self.ai_decision(damaged_grass_pokemon) if damaged_grass_pokemon else None
 
         # Add other cards here as needed
         return None
@@ -211,6 +297,10 @@ class BasicAI:
             return any(
                 p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
             )
+        if card.name == "Erika":
+            return any(
+            p.type == "Grass" and p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
+        )
         return True  # Default to eligible for cards without specific conditions
 
     def ai_decision(self, pokemon_list):

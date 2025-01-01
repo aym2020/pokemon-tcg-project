@@ -63,15 +63,17 @@ def handle_knockout(attacker, defender, attacking_player, defending_player, logg
     points = 2 if defender.is_ex else 1
     attacking_player.prizes += points
     logger.log(f"{attacking_player.name} earned {points} point(s)!")
-
+    
     # Move the knocked-out Pokémon to the discard pile
     defending_player.discard_pile.append(defender)
     defending_player.active_pokemon = None
-
+    
     # Check if defending player has bench Pokémon
     if defending_player.bench:
-        defending_player.active_pokemon = defending_player.bench.pop(0)
-        logger.log(f"{defending_player.name} moved {defending_player.active_pokemon.name} from the bench to active.")
+        new_active = defending_player.bench.pop(0)
+        new_active.current_hp = new_active.hp  # Reset HP to max
+        defending_player.active_pokemon = new_active
+        logger.log(f"{defending_player.name} moved {new_active.name} from the bench to active.")
     else:
         # No bench Pokémon, defending player loses
         logger.critical(f"{defending_player.name} has no more Pokémon! {attacking_player.name} wins the game!")

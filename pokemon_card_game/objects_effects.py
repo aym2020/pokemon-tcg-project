@@ -111,6 +111,23 @@ def blue_effect(player, logger=None):
     for pokemon in [player.active_pokemon] + player.bench:
         if hasattr(pokemon, "damage_reduction"):
             pokemon.damage_reduction += 10  # Add a temporary reduction of 10
+    
+def erika_effect(target, logger=None):
+    """
+    Heal 50 damage from the target Pokémon if it is of Grass type.
+    :param target: The Pokémon to heal.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"Applying Erika effect to {target.name}.", color=Fore.CYAN)
+
+    # Heal the target Pokémon
+    heal_target(target, amount=50, logger=logger)
+
+    # Log the result
+    if logger:
+        logger.log(f"Healed {target.name} by 50 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)
+
                 
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
@@ -149,4 +166,9 @@ object_effects = {
         "requires_target": False,
         "eligibility_check": False  # Always eligible
     },
+        "Erika": {
+        "effect": erika_effect,
+        "requires_target": True,
+        "eligibility_check": True
+    }
 }

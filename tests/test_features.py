@@ -4,6 +4,8 @@ from pokemon_card_game.logger import Logger
 from pokemon_card_game.player import Player
 from pokemon_card_game.gameplay import perform_attack, attach_energy, evolve_pokemon
 from pokemon_card_game.game import Game
+from pokemon_card_game.ai import BasicAI
+
 import random
 
 """
@@ -657,7 +659,32 @@ class TestFeatures(unittest.TestCase):
         # Assertions
         self.assertEqual(len(player.hand), 1, "Player should draw a card on the second turn.")
     
-   
+    def test_get_evolution_and_max_energy_from_deck(self):
+        """
+        Test the function to retrieve evolutions and calculate the maximum energy required.
+        """
+        # Create a sample deck
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", attacks=["10F"])
+        charmeleon = PokemonCard("Charmeleon", "Fire", 90, "Water", evolves_from="Charmander", attacks=["50FF"])
+        charizard = PokemonCard("Charizard", "Fire", 150, "Water", evolves_from="Charmeleon", attacks=["200FFFF(discardOwnEnergy(2F))", "100FFF"])
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric", attacks=["20W"])
+
+        # Create player and add cards to deck
+        deck = [charmander, charmeleon, charizard, squirtle]
+        player = Player("Ash", deck, energy_colors=["Fire"])
+
+        # Set Charmander as the active Pokémon
+        player.active_pokemon = charmander
+
+        # Create AI instance
+        ai = BasicAI(player, self.logger)
+
+        # Call the AI method
+        evolutions, max_energy_required = ai.get_evolution_and_max_energy_from_deck(charmander)
+
+        # Assertions
+        self.assertEqual(len(evolutions), 2, "There should be 2 evolutions (Charmeleon, Charizard).")
+        self.assertEqual(max_energy_required.get("F", 0), 4, "The maximum Fire energy required should be 4.")
               
 if __name__ == '__main__':
     unittest.main()

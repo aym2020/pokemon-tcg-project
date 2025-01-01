@@ -13,6 +13,7 @@ This test case tests the following features:
 4. Blaine: Check that Blaine effect boosts damage for Ninetales, Rapidash, or Magmar.
 5. Giovanni: Check that Giovanni effect boosts damage for all Pokémon.
 6. Blue: Check that Blue effect reduces damage taken by all Pokémon during the opponent's next turn.
+7. Erika: Check that Erika heals 50 damage from a Grass Pokémon.
 """
     
 
@@ -253,6 +254,36 @@ class TestTrainerEffects(unittest.TestCase):
 
         # Verify that damage reduction is removed after the turn
         self.assertEqual(getattr(ninetales, "damage_reduction", 0), 0, "Damage reduction should be cleared after the turn.")
+    
+    def test_erika_effect(self):
+        """
+        Test that Erika heals 50 damage from a Grass Pokémon.
+        """
+        # Create Pokémon
+        bulbasaur = PokemonCard("Bulbasaur", "Grass", 60, "Fire", energy={"G": 1})
+        oddish = PokemonCard("Oddish", "Grass", 40, "Fire", energy={"G": 1})
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", energy={"F": 1})
+        
+        # Damage Bulbasaur and Oddish
+        bulbasaur.current_hp = 30  # 30/60 HP
+        oddish.current_hp = 10  # 10/40 HP
+        
+        # Create player
+        player = Player("Ash", [bulbasaur, oddish, charmander], ["Grass"])
+        
+        # Set active Pokémon and bench
+        player.active_pokemon = bulbasaur
+        player.bench = [oddish, charmander]
+        
+        # Execute Erika's effect
+        erika_effect(oddish, self.logger)
+        
+        # Check that Oddish was healed
+        self.assertEqual(oddish.current_hp, min(40, 10 + 50), "Oddish should be fully healed by Erika.")
+        
+        # Check that Bulbasaur and Charmander were not healed
+        self.assertEqual(bulbasaur.current_hp, 30, "Bulbasaur should not be healed by Erika.")
+        self.assertEqual(charmander.current_hp, 60, "Charmander should not be healed by Erika.")
 
 if __name__ == "__main__":
     unittest.main()

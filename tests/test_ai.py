@@ -22,6 +22,8 @@ This test case tests the following features:
 11. Check that the AI uses Professor's Research effect to draw 2 cards.
 12. Check that the AI can use only one Trainer card per turn.
 13. Check that the AI uses Blue effect to reduce damage for all Pokémon by 10.
+14. Check that the AI uses Erik effect to heal a Grass Pokémon.
+15. Check that the AI does not use Erik effect if there are no Grass Pokémon.
 """
 
 class TestAI(unittest.TestCase):
@@ -442,7 +444,64 @@ class TestAI(unittest.TestCase):
         # Verify damage reduction
         self.assertEqual(squirtle.damage_reduction, 10)
         self.assertEqual(bulbasaur.damage_reduction, 10)
+    
+    def test_ai_use_erika_effect(self):
+        """
+        Test that the AI uses Erika effect to heal a Grass Pokémon.
+        """
+        # Create Pokémon
+        bulbasaur = PokemonCard("Bulbasaur", "Grass", 60, "Fire", energy={"G": 1})
+        bulbasaur.current_hp = 30
+        
+        # Create player
+        player = Player("Ash", [bulbasaur], ["Grass"])
+        
+        # Set active Pokémon
+        player.active_pokemon = bulbasaur
+        
+        # Define the amount of HP before using Erika
+        hp_before = bulbasaur.current_hp
+        
+        # Create Erika card
+        erika = TrainerCard("Erika", "Heal 50 damage from the target Pokémon if it is of Grass type.")
+        
+        # Add Erika to player's hand
+        player.hand.append(erika)
+        
+        # Create AI
+        ai = BasicAI(player, self.logger)
+        
+        # Use Erika effect
+        ai.use_trainer_card()
+        
+        # Check that the Pokémon was healed
+        self.assertGreater(bulbasaur.current_hp, hp_before, "Pokémon should be healed by Erika effect.")
 
-            
+    def test_ai_no_grass_pokemon_erika_effect(self):
+        """
+        Test that the AI does not use Erika effect if there are no Grass Pokémon.
+        """
+        # Create Pokémon
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", energy={"F": 1})
         
+        # Create player
+        player = Player("Ash", [charmander], ["Fire"])
         
+        # Set Charmander as the active Pokémon
+        player.active_pokemon = charmander  # Fire type
+        player.bench = []
+        
+        # Create Erika card
+        erika = TrainerCard("Erika", "Heal 50 damage from the target Pokémon if it is of Grass type.")
+        
+        # Add Erika to player's hand
+        player.hand.append(erika)
+        
+        # Create AI
+        ai = BasicAI(player, self.logger)
+        
+        # Use Erika effect
+        ai.use_trainer_card()
+        
+        # Check that the Erika card was not used
+        self.assertIn(erika, player.hand, "Erika effect should not be used if there are no Grass Pokémon.")

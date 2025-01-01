@@ -32,6 +32,7 @@ class PokemonCard(Card):
         self.is_ex = is_ex
         self.attacks = [Attack(attack) for attack in attacks] if attacks else []
         self.evolves_from = evolves_from
+        self.evolves_to = []
         self.subcategory = subcategory  # Basic, Stage 1, Stage 2
         self.energy = energy if energy else {}
         self.retreat = retreat
