@@ -27,6 +27,7 @@ This test case tests the following features:
 16. Check that the AI uses Pokédex card to look at the top 3 cards of its deck.
 17. Check that the AI uses Mythical Slab effect to add a Psychic Pokémon to the player's hand.
 18. Check that the AI uses Fossil card to add a random Basic Pokémon to the player's hand.
+19. Check that the AI uses Budding expeditioner to bring Mew ex to the player's hand.
 """
 
 class TestAI(unittest.TestCase):
@@ -582,3 +583,34 @@ class TestAI(unittest.TestCase):
         self.assertEqual(player.active_pokemon.name, "Dome Fossil", "The active Pokémon should be the Dome Fossil.")
         self.assertEqual(player.active_pokemon.hp, 40, "Dome Fossil should have 40 HP.")
         self.assertEqual(player.active_pokemon.type, "Colorless", "Dome Fossil should be a Colorless Pokémon.")
+    
+    def test_ai_uses_budding_expeditioner(self):
+        """Test that the AI uses Budding Expeditioner when the active Pokémon is Mew ex."""
+        # Create a Mew ex Pokémon card
+        mew_ex = PokemonCard("Mew ex", "Psychic", 90, "Dark")
+        
+        # Create player and set up the deck and hand
+        player = Player("Ash", [], ["Psychic"])
+        player.active_pokemon = mew_ex
+
+        # Create Budding Expeditioner card
+        budding_expeditioner = TrainerCard("Budding Expeditioner", effect="Put your Mew ex in the Active Spot into your hand.")
+        player.hand.append(budding_expeditioner)
+
+        # Create AI instance
+        ai = BasicAI(player, self.logger)
+
+        # Ensure AI recognizes the card as eligible
+        self.assertTrue(ai.is_card_eligible(budding_expeditioner), "Budding Expeditioner should be eligible if Mew ex is in the Active Spot.")
+
+        # Execute AI logic for using trainer cards
+        ai.use_trainer_card()
+
+        # Check that the Mew ex card is now in the player's hand
+        self.assertIn(mew_ex, player.hand, "Mew ex should be added to the player's hand after using Budding Expeditioner.")
+
+        # Check that Budding Expeditioner card was removed from the hand
+        self.assertNotIn(budding_expeditioner, player.hand, "Budding Expeditioner should be removed from the player's hand after being used.")
+
+        # Ensure the active Pokémon spot is now empty
+        self.assertIsNone(player.active_pokemon, "The Active Spot should be empty after using Budding Expeditioner.")
