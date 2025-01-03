@@ -1,6 +1,6 @@
 from pokemon_card_game.card import PokemonCard, TrainerCard, ObjectCard
-from pokemon_card_game.gameplay import perform_attack, attach_energy, generate_energy, evolve_pokemon
-from pokemon_card_game.objects_effects import object_effects
+from pokemon_card_game.gameplay import *
+from pokemon_card_game.objects_effects import *
 from colorama import Fore
 
 class BasicAI:
@@ -64,11 +64,17 @@ class BasicAI:
     def play_pokemon_if_needed(self):
         """Set the active Pokémon if none exists."""
         if self.player.active_pokemon is None:
-            for card in self.player.hand:
+            for card in self.player.hand[:]:
+                # Check for a regular Pokémon card
                 if isinstance(card, PokemonCard) and not card.evolves_from:
                     self.player.play_pokemon(card, self.logger)
                     self.player.hand.remove(card)
-                    break
+                    return  # Exit after playing a card
+                
+                # Check for a fossil card and play it as a Pokémon
+                if card.name in ["Dome Fossil", "Helix Fossil", "Old Amber"]:
+                    fossil_effect(self.player, card, logger=self.logger)
+                    return  # Exit after playing a card
 
     def fill_bench(self):
         """Fill the bench with available Pokémon."""
@@ -301,6 +307,8 @@ class BasicAI:
             return any(
             p.type == "Grass" and p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
         )
+        if card.name == "Budding Expeditioner":
+            return self.player.active_pokemon and self.player.active_pokemon.name == "Mew ex"
         return True  # Default to eligible for cards without specific conditions
 
     def ai_decision(self, pokemon_list):

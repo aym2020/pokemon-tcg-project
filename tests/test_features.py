@@ -1,10 +1,12 @@
 import unittest
-from pokemon_card_game.card import PokemonCard, TrainerCard
+from pokemon_card_game.card import *
 from pokemon_card_game.logger import Logger
 from pokemon_card_game.player import Player
 from pokemon_card_game.gameplay import perform_attack, attach_energy, evolve_pokemon
 from pokemon_card_game.game import Game
 from pokemon_card_game.ai import BasicAI
+from pokemon_card_game.effects import *
+from pokemon_card_game.objects_effects import *
 
 import random
 
@@ -31,6 +33,9 @@ This test case tests the following features:
 19. Draw a card at the start of the turn
 20. Prevent drawing a card on turn 1
 21. Draw a card on turn 2
+22. Fossil card are used as Basic Pokemon
+23. Budding expeditioner effect brings Mew Ex back to hand
+24. Budding expeditioner effect does not bring Mew Ex back to hand if it is not the active Pokemon
 """
 
 class TestFeatures(unittest.TestCase):
@@ -685,6 +690,57 @@ class TestFeatures(unittest.TestCase):
         # Assertions
         self.assertEqual(len(evolutions), 2, "There should be 2 evolutions (Charmeleon, Charizard).")
         self.assertEqual(max_energy_required.get("F", 0), 4, "The maximum Fire energy required should be 4.")
-              
+    
+    def test_fossil_effect(self):
+        """Test that a fossil card is played as a 40-HP Basic Colorless Pokémon."""
+        # Create a Dome Fossil object card
+        dome_fossil = ObjectCard("Dome Fossil", "Play this card as a Basic Pokémon.")
+
+        # Create player
+        player = Player("Ash", [dome_fossil], energy_colors=["Colorless"])
+        player.hand.append(dome_fossil)
+
+        # Apply the effect
+        fossil_effect(player, dome_fossil, self.logger)
+
+        # Check that the fossil was played as a Pokémon
+        self.assertIsNotNone(player.active_pokemon, "Fossil card should be played as the active Pokémon.")
+        self.assertEqual(player.active_pokemon.name, "Dome Fossil", "The active Pokémon should be Dome Fossil.")
+        self.assertEqual(player.active_pokemon.hp, 40, "The active Pokémon should have 40 HP.")
+        self.assertEqual(player.active_pokemon.type, "Colorless", "The active Pokémon should be Colorless.")
+        
+    def test_budding_expeditioner_with_mew_ex(self):
+        """Test Budding Expeditioner effect with Mew ex in the Active Spot."""
+        # Create Mew ex card
+        mew_ex = PokemonCard("Mew ex", "Psychic", 90, "Dark", is_ex=True)
+        
+        # Create player with Mew ex as the active Pokémon
+        player = Player("Ash", [], ["Psychic"])
+        player.active_pokemon = mew_ex
+
+        # Apply the effect
+        budding_expeditioner_effect(player, self.logger)
+
+        # Check that Mew ex is now in the player's hand
+        self.assertIn(mew_ex, player.hand, "Mew ex should be in the player's hand after using Budding Expeditioner.")
+        self.assertIsNone(player.active_pokemon, "The Active Spot should be empty after Mew ex is returned to the hand.")
+    
+    def test_budding_expeditioner_ineligible(self):
+        """Test that Budding Expeditioner is not played if the active Pokémon is not Mew ex."""
+        # Create a non-Mew ex Pokémon card
+        squirtle = PokemonCard("Squirtle", "Water", 50, "Electric")
+        
+        # Create player with Squirtle as the active Pokémon
+        player = Player("Ash", [], ["Water"])
+        player.active_pokemon = squirtle
+
+        # Mock AI and effect logic
+        ai = BasicAI(player, self.logger)
+        card = TrainerCard("Budding Expeditioner", effect="Put your Mew ex in the Active Spot into your hand.")
+        player.hand.append(card)
+
+        # Ensure the card is not eligible
+        self.assertFalse(ai.is_card_eligible(card), "Budding Expeditioner should not be eligible if Mew ex is not in the Active Spot.")
+        
 if __name__ == '__main__':
     unittest.main()

@@ -24,6 +24,9 @@ This test case tests the following features:
 13. Check that the AI uses Blue effect to reduce damage for all Pokémon by 10.
 14. Check that the AI uses Erik effect to heal a Grass Pokémon.
 15. Check that the AI does not use Erik effect if there are no Grass Pokémon.
+16. Check that the AI uses Pokédex card to look at the top 3 cards of its deck.
+17. Check that the AI uses Mythical Slab effect to add a Psychic Pokémon to the player's hand.
+18. Check that the AI uses Fossil card to add a random Basic Pokémon to the player's hand.
 """
 
 class TestAI(unittest.TestCase):
@@ -505,3 +508,77 @@ class TestAI(unittest.TestCase):
         
         # Check that the Erika card was not used
         self.assertIn(erika, player.hand, "Erika effect should not be used if there are no Grass Pokémon.")
+
+    def test_ai_uses_pokedex(self):
+        """Test that the AI uses the Pokédex card to look at the top 3 cards of its deck."""
+        # Create Pokémon and object card
+        card1 = PokemonCard("Card 1", "Fire", 60, "Water")
+        card2 = PokemonCard("Card 2", "Fire", 70, "Water")
+        card3 = PokemonCard("Card 3", "Fire", 80, "Water")
+        pokedex = ObjectCard("Pokédex", "Look at the top 3 cards of your deck.")
+
+        # Create a player and add cards to their deck and hand
+        player = Player("Ash", [card1, card2, card3], energy_colors=["Fire"])
+        player.hand.append(pokedex)
+
+        # Create AI
+        ai = BasicAI(player, self.logger)
+
+        # Use Pokédex
+        ai.use_object_card()
+
+        # Check that the Pokédex card was used and is no longer in the hand
+        self.assertNotIn(pokedex, player.hand, "Pokédex should be removed from the hand after use.")
+
+    def test_ai_uses_mythical_slab(self):
+        """Test that the AI uses the Mythical Slab card correctly."""
+        # Create Pokémon and object card
+        psychic_card = PokemonCard("Psychic Pokémon", "Psychic", 60, "Dark")
+        non_psychic_card = PokemonCard("Non-Psychic Pokémon", "Fire", 70, "Water")
+        mythical_slab = ObjectCard("Mythical Slab", "Look at the top card of your deck and act based on its type.")
+
+        # Create a player and add cards to their deck and hand
+        player = Player("Ash", [psychic_card, non_psychic_card], energy_colors=["Psychic"])
+        player.hand.append(mythical_slab)
+
+        # Create AI
+        ai = BasicAI(player, self.logger)
+
+        # Use Mythical Slab
+        ai.use_object_card()
+
+        # Check that the Mythical Slab card was used and is no longer in the hand
+        self.assertNotIn(mythical_slab, player.hand, "Mythical Slab should be removed from the hand after use.")
+
+        # Check that the psychic card was moved to the hand
+        self.assertIn(psychic_card, player.hand, "Psychic Pokémon should be in the hand after using Mythical Slab.")
+
+        # Use Mythical Slab again for the next card
+        ai.use_object_card()
+
+        # Check that the non-psychic card was placed at the bottom of the deck
+        self.assertEqual(player.deck[-1], non_psychic_card, "Non-Psychic Pokémon should be placed at the bottom of the deck.")
+    
+    def test_ai_uses_fossil_as_basic_pokemon(self):
+        """Test that the AI uses fossil object cards as basic Pokémon."""
+        # Create a fossil card
+        dome_fossil = ObjectCard("Dome Fossil", "Play as a 40-HP Basic Colorless Pokémon.")
+        
+        # Create a player with the fossil card in their hand
+        player = Player("Ash", [], ["Colorless"])
+        player.hand.append(dome_fossil)
+        
+        # Create AI instance
+        ai = BasicAI(player, self.logger)
+        
+        # Ensure the active Pokémon slot is empty
+        self.assertIsNone(player.active_pokemon, "Active Pokémon should be None before the AI plays a card.")
+
+        # Simulate AI turn logic
+        ai.play_pokemon_if_needed()
+
+        # Check that the AI used the fossil card as a Pokémon
+        self.assertIsNotNone(player.active_pokemon, "AI should have used the fossil card to set an active Pokémon.")
+        self.assertEqual(player.active_pokemon.name, "Dome Fossil", "The active Pokémon should be the Dome Fossil.")
+        self.assertEqual(player.active_pokemon.hp, 40, "Dome Fossil should have 40 HP.")
+        self.assertEqual(player.active_pokemon.type, "Colorless", "Dome Fossil should be a Colorless Pokémon.")

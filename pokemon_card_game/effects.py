@@ -185,4 +185,16 @@ def draw_cards(player, number_of_cards, logger=None):
                 logger.log(f"{player.name} cannot draw more cards; the deck is empty.", color=Fore.RED)
             break
 
+def look_at_top_cards(deck, count, logger=None):
+    """
+    Look at the top X cards of the deck.
+    :param deck: List of cards in the player's deck.
+    :param count: Number of top cards to look at.
+    :param logger: Logger instance to log messages.
+    :return: List of the top X cards.
+    """
+    top_cards = deck[:count]
+    if logger:
+        logger.log(f"Top {count} cards of the deck: {[card.name for card in top_cards]}.", color=Fore.CYAN)
+    return top_cards
 

@@ -128,7 +128,96 @@ def erika_effect(target, logger=None):
     if logger:
         logger.log(f"Healed {target.name} by 50 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)
 
-                
+def pokedex_effect(player, logger=None):
+    """
+    Look at the top 3 cards of the player's deck.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if not player.deck:
+        if logger:
+            logger.log(f"{player.name}'s deck is empty. Pokédex has no effect.", color=Fore.RED)
+        return
+
+    if logger:
+        logger.log(f"{player.name} plays Pokédex to look at the top 3 cards of the deck.", color=Fore.CYAN)
+
+    # Look at the top 5 cards
+    top_3_cards = look_at_top_cards(player.deck, 3, logger)
+    if logger:
+        logger.log(f"Top 3 cards of the deck: {[card.name for card in top_3_cards]}", color=Fore.CYAN)
+
+def mythical_slab_effect(player, logger=None):
+    """
+    Look at the top card of the player's deck.
+    If it is a Psychic Pokémon, add it to their hand.
+    If not, place it at the bottom of the deck.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if not player.deck:
+        if logger:
+            logger.log(f"{player.name}'s deck is empty. Mythical Slab has no effect.", color=Fore.RED)
+        return
+
+    # Look at the top card
+    top_card = player.deck.pop(0)
+    if logger:
+        logger.log(f"Top card of the deck is {top_card.name}.", color=Fore.CYAN)
+
+    if isinstance(top_card, PokemonCard) and top_card.type == "Psychic":
+        player.hand.append(top_card)
+        
+        if logger:
+            logger.log(f"{top_card.name} is a Psychic Pokémon and was added to {player.name}'s hand.", color=Fore.GREEN)
+    else:
+        player.deck.append(top_card)  # Place the card at the bottom of the deck
+        if logger:
+            logger.log(f"{top_card.name} is not a Psychic Pokémon and was placed at the bottom of the deck.", color=Fore.YELLOW)
+
+def fossil_effect(player, object_card, logger=None):
+    """
+    Play an object card as a 40-HP Basic Colorless Pokémon.
+    :param player: The Player object.
+    :param object_card: The object card being played.
+    :param logger: Logger instance to log messages.
+    """
+    # Create a new PokémonCard instance based on the object card
+    fossil_pokemon = PokemonCard(
+        name=object_card.name,  # Use the name of the object card
+        type="Colorless",       # Colorless Pokémon
+        hp=40,                  # 40 HP
+        weakness=None,          # No specific weakness
+        subcategory="Basic"     # Acts as a Basic Pokémon
+    )
+    
+    # Play the Pokémon card
+    player.play_pokemon(fossil_pokemon, logger)
+
+    # Remove the object card from the player's hand
+    if object_card in player.hand:
+        player.hand.remove(object_card)
+        if logger:
+            logger.log(f"{player.name} played {object_card.name} as a 40-HP Colorless Pokémon.", color=Fore.CYAN)
+
+def budding_expeditioner_effect(player, logger=None):
+    """
+    Put your Mew ex in the Active Spot into your hand.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    active_pokemon = player.active_pokemon
+
+    # Check if the active Pokémon is Mew ex
+    if active_pokemon and active_pokemon.name == "Mew ex":
+        player.hand.append(active_pokemon)
+        player.active_pokemon = None
+        if logger:
+            logger.log(f"{player.name} used Budding Expeditioner and returned Mew ex to their hand.", color=Fore.CYAN)
+    else:
+        if logger:
+            logger.log(f"{player.name} cannot use Budding Expeditioner as Mew ex is not in the Active Spot.", color=Fore.RED)
+
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
     "Misty": {
@@ -156,19 +245,49 @@ object_effects = {
         "requires_target": False,
         "eligibility_check": True
     },
-        "Giovanni": {
+    "Giovanni": {
         "effect": giovanni_effect,
         "requires_target": False,
         "eligibility_check": False  # Always eligible
     },
-        "Blue": {
+    "Blue": {
         "effect": blue_effect,
         "requires_target": False,
         "eligibility_check": False  # Always eligible
     },
-        "Erika": {
+    "Erika": {
         "effect": erika_effect,
         "requires_target": True,
         "eligibility_check": True
-    }
+    },
+    "Pokédex": {
+        "effect": pokedex_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Mythical Slab": {
+        "effect": mythical_slab_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Dome Fossil": {
+        "effect": fossil_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Helix Fossil": {
+        "effect": fossil_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Old Amber": {
+        "effect": fossil_effect,
+        "requires_target": False,
+        "eligibility_check": False
+    },
+    "Budding Expeditioner": {
+        "effect": budding_expeditioner_effect,
+        "requires_target": False,
+        "eligibility_check": True
+    },
 }
