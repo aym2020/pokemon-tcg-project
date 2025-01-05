@@ -44,6 +44,8 @@ class TestFeatures(unittest.TestCase):
         Set up the test environment with a Logger and test Pokémon.
         """
         self.logger = Logger(verbose=False)
+        self.prize = 1
+        self.prize_ex = 2
         
     def test_pokemon_initialization(self):
         """
@@ -100,21 +102,38 @@ class TestFeatures(unittest.TestCase):
         # Create game
         game = Game(player1, player2, verbose=False)
         
-        # Set active pokemon for each player
+        # Set active Pokémon for each player
         player1.active_pokemon = charmander
         player2.active_pokemon = pikachu
         
-        # Attach enough energy to perform the attack
-        attach_energy(charmander, "F", 1, self.logger)
-        attach_energy(pikachu, "C", 2, self.logger)
+        # Add required energy to players' energy zones
+        player1.energy_zone = ["F"]  # Fire energy for Charmander's attack
+        player2.energy_zone = ["C", "C"]  # Colorless energy for Pikachu's attack
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        attach_energy(player2, player2.active_pokemon, self.logger)
+        attach_energy(player2, player2.active_pokemon, self.logger)
         
         # Simulate fight
-        perform_attack(player1, player2, self.logger, game)
-        perform_attack(player2, player1, self.logger, game)
-          
-        # Check if HP has decreased
-        self.assertEqual(charmander.current_hp, initial_hp_charmander - attack_damage_pikachu) # Charmander HP = 60 - 20 = 40
-        self.assertEqual(pikachu.current_hp, initial_hp_pikachu - attack_damage_charmander) # Pikachu HP = 40 - 30 = 10
+        perform_attack(player1, player2, self.logger, game)  # Charmander attacks Pikachu
+        perform_attack(player2, player1, self.logger, game)  # Pikachu attacks Charmander
+        
+        # Expected HP
+        expected_hp_charmander = max(0, initial_hp_charmander - attack_damage_pikachu)
+        expected_hp_pikachu = max(0, initial_hp_pikachu - attack_damage_charmander)
+        
+        # Check if HP has decreased correctly
+        self.assertEqual(
+            charmander.current_hp, 
+            expected_hp_charmander,
+            "Charmander's HP should decrease by Pikachu's attack damage."
+        )
+        self.assertEqual(
+            pikachu.current_hp, 
+            expected_hp_pikachu,
+            "Pikachu's HP should decrease by Charmander's attack damage."
+        )
 
     def test_pokemon_fight_with_weakness(self):
         """
@@ -142,13 +161,23 @@ class TestFeatures(unittest.TestCase):
         player2.active_pokemon = charmander
         
         # Attach enough energy to perform the attack
-        attach_energy(squirtle, "W", 1, self.logger)
+        player1.energy_zone = ["W"]
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
 
         # Simulate fight
         perform_attack(player1, player2, self.logger, game)
+        
+        # Expected HP
+        expected_hp = initial_hp_charmander - (attack_damage_squirtle + 20)
 
         # Check if HP has decreased
-        self.assertEqual(charmander.current_hp, initial_hp_charmander - (attack_damage_squirtle + 20)) # Charmander HP = 60 - (20 + 20) = 20
+        self.assertEqual(
+            charmander.current_hp, 
+            expected_hp,
+            "Charmander's HP should decrease by Squirtle's attack damage and weakness."
+        ) # Charmander HP = 60 - (20 + 20) = 20
     
     def test_pokemon_fight_with_damage_boost(self):
         """
@@ -162,8 +191,8 @@ class TestFeatures(unittest.TestCase):
         initial_hp_charmander = charmander.hp
         
         # Attack damage
-        attack_damage_squirtle = squirtle.attacks[0].damage
         damage_boost = 10
+        attack_damage_squirtle = squirtle.attacks[0].damage
         squirtle.damage_boost = damage_boost
     
         # Create players
@@ -178,13 +207,23 @@ class TestFeatures(unittest.TestCase):
         player2.active_pokemon = charmander
         
         # Attach enough energy to perform the attack
-        attach_energy(squirtle, "W", 1, self.logger)
+        player1.energy_zone = ["W"]  # Water energy for Squirtle's attack
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
 
         # Simulate fight
         perform_attack(player1, player2, self.logger, game)
+        
+        # Expected HP
+        expected_hp = max(0, initial_hp_charmander - (attack_damage_squirtle + squirtle.damage_boost + 20))
 
         # Check if HP has decreased
-        self.assertEqual(charmander.current_hp, initial_hp_charmander - (attack_damage_squirtle + 20 + damage_boost)) # Charmander HP = 60 - (20 + 20) = 20
+        self.assertEqual(
+            charmander.current_hp, 
+            expected_hp,
+            "Charmander's HP should decrease by Squirtle's attack damage, weakness, and damage boost."
+        )
       
     def test_pokemon_is_knocked_out(self):
         """
@@ -211,21 +250,39 @@ class TestFeatures(unittest.TestCase):
         player1.active_pokemon = pikachu
         player2.active_pokemon = squirtle
         
-        # Attach enough energy to perform the attack
-        attach_energy(pikachu, "C", 2, self.logger)
+        # Add required energy to players' energy zones
+        player1.energy_zone = ["C", "C"]
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        attach_energy(player1, player1.active_pokemon, self.logger)
         
         # Simulate fight
         perform_attack(player1, player2, self.logger, game)
 
         # Verify Squirtle is in the discard pile
-        self.assertIn(squirtle, player2.discard_pile)
+        self.assertIn(
+            squirtle, 
+            player2.discard_pile)
+
+        # Expected HP
+        expected_hp = max(0, initial_hp_squirtle - (attack_damage_pikachu + 20))
             
         # Check if Squirtle is knocked out
-        self.assertEqual(squirtle.current_hp, max(0, initial_hp_squirtle - (attack_damage_pikachu + 20))) # Squirtle HP = 50 - (30 + 20) = 0
+        self.assertEqual(
+            squirtle.current_hp, 
+            expected_hp,
+            "Squirtle's HP should be 0."    
+        ) # Squirtle HP = 50 - (30 + 20) = 0
         
         # Check if the game ended correctly
-        self.assertTrue(game.game_state["ended"], "The game should have ended.")
-        self.assertEqual(game.game_state["winner"], "Ash", "Ash should be the winner.")
+        self.assertTrue(
+            game.game_state["ended"], 
+            "The game should have ended.")
+        self.assertEqual(
+            game.game_state["winner"], 
+            player1.name, 
+            "Ash should be the winner.")
     
     def test_player_gets_point_after_knockout(self):
         """
@@ -246,14 +303,22 @@ class TestFeatures(unittest.TestCase):
         player1.active_pokemon = pikachu
         player2.active_pokemon = squirtle
         
-        # Attach enough energy to perform the attack
-        attach_energy(pikachu, "C", 2, self.logger)
+        # Add required energy to players' energy zones
+        player1.energy_zone = ["C", "C"]
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        attach_energy(player1, player1.active_pokemon, self.logger)
         
         # Simulate fight: Pikachu attacks Squirtle
         perform_attack(player1, player2, self.logger, game)
-       
+               
         # Check if Ash has 1 point
-        self.assertEqual(player1.prizes, 1, "Ash should have 1 point after knocking out Squirtle.")
+        self.assertEqual(
+            player1.prizes, 
+            self.prize, 
+            "Ash should have 1 point after knocking out Squirtle."
+        )
     
     def test_player_gets_two_points_after_knockout(self):
         """
@@ -277,14 +342,22 @@ class TestFeatures(unittest.TestCase):
         player1.active_pokemon = pikachu
         player2.active_pokemon = charizard
         
-        # Attach enough energy to perform the attack
-        attach_energy(pikachu, "C", 2, self.logger)
+        # Add required energy to players' energy zones
+        player1.energy_zone = ["C", "C"]
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        attach_energy(player1, player1.active_pokemon, self.logger)
         
         # Simulate fight: Pikachu attacks Charizard
         perform_attack(player1, player2, self.logger, game)
         
         # Check if Ash has 2 points after knocking out Charizard EX      
-        self.assertEqual(player1.prizes, 2, "Ash should have 2 points after knocking out Charizard.")
+        self.assertEqual(
+            player1.prizes, 
+            self.prize_ex,
+            "Ash should have 2 points after knocking out Charizard."
+        )
         
     def test_player_wins_game(self):
         """
@@ -305,9 +378,13 @@ class TestFeatures(unittest.TestCase):
         player1.active_pokemon = pikachu
         player2.active_pokemon = squirtle
         
-        # Attach enough energy to perform the attack
-        attach_energy(pikachu, "C", 2, self.logger)
-
+        # Add required energy to players' energy zones
+        player1.energy_zone = ["C", "C"]
+        
+        # Attach energy to active Pokémon
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        attach_energy(player1, player1.active_pokemon, self.logger)
+        
         # Set Squirtle's HP low enough to be knocked out by Pikachu's attack
         squirtle.current_hp = 20
 
@@ -315,14 +392,36 @@ class TestFeatures(unittest.TestCase):
         perform_attack(player1, player2, self.logger, game)
         
         # Check if the game ended correctly
-        self.assertTrue(game.game_state["ended"], "The game should have ended.")
-        self.assertEqual(game.game_state["winner"], "Ash", "Ash should be the winner.")
+        self.assertTrue(
+            game.game_state["ended"], 
+            "The game should have ended."
+        )
+        self.assertEqual(
+            game.game_state["winner"], 
+            player1.name, 
+            "Ash should be the winner."
+        )
             
         # Validate game state
-        self.assertEqual(player1.prizes, 1, "Ash should have 1 point after knocking out Squirtle.")
-        self.assertIsNone(player2.active_pokemon, "Gary should have no active Pokémon.")
-        self.assertEqual(player2.bench, [], "Gary should have no Bench Pokémon.")
-        self.assertIn(squirtle, player2.discard_pile, "Squirtle should be in Gary's discard pile.")
+        self.assertEqual(
+            player1.prizes, 
+            self.prize, 
+            "Ash should have 1 point after knocking out Squirtle."
+        )
+        self.assertIsNone(
+            player2.active_pokemon, 
+            "Gary should have no active Pokémon."
+        )
+        self.assertEqual(
+            player2.bench, 
+            [], 
+            "Gary should have no Bench Pokémon."
+        )
+        self.assertIn(
+            squirtle, 
+            player2.discard_pile, 
+            "Squirtle should be in Gary's discard pile."
+        )
 
     def test_energy_of_each_pokemon(self):
         """
@@ -332,30 +431,34 @@ class TestFeatures(unittest.TestCase):
         charizard = PokemonCard("Charizard", "Fire", 200, "Water", is_ex=False, attacks=["200FFFF(discardEnergy(2F))"], energy={"F": 4})
         
         # Assertions
-        self.assertEqual(charizard.energy, {"F": 4})
+        self.assertEqual(
+            charizard.energy, 
+            {"F": 4},
+            "Charizard should have 4 Fire Energy."
+        )
         
     def test_attach_energy(self):
         """
         Test that energy is correctly attached to a Pokémon.
         """
+        # Create player
+        player1 = Player("Ash", [], ["Fire"])
+        
         # Create Pokémon and Logger
         charizard = PokemonCard("Charizard", "Fire", 200, "Water", energy={"F": 2})
-        logger = Logger(verbose=False)
+        
+        # Add required energy to the player's energy zone
+        player1.energy_zone = ["F", "F"]
 
         # Attach energy
-        attach_energy(charizard, "F", 2, logger)  # Add 2 Fire Energy
-        attach_energy(charizard, "C", 1, logger)  # Add 1 Colorless Energy
+        attach_energy(player1, charizard, self.logger)
+        attach_energy(player1, charizard, self.logger)
 
         # Assertions
-        self.assertEqual(charizard.energy["F"], 4, "Charizard should have 4 Fire Energy.")
-        self.assertEqual(charizard.energy["C"], 1, "Charizard should have 1 Colorless Energy.")
-
-        # Test attaching energy to a card without energy support
-        trainer_card = TrainerCard("Potion", "Trainer")
-        attach_energy(trainer_card, "F", 1, logger)  # Should not allow energy attachment
-
-        # Assertions
-        self.assertNotIn("F", trainer_card.__dict__, "Trainer card should not have an energy attribute.")
+        self.assertEqual(
+            charizard.energy["F"], 
+            4, 
+            "Charizard should have 4 Fire Energy.")
 
     def test_pokemon_has_correct_energy_to_attack(self):
         """
@@ -741,6 +844,16 @@ class TestFeatures(unittest.TestCase):
 
         # Ensure the card is not eligible
         self.assertFalse(ai.is_card_eligible(card), "Budding Expeditioner should not be eligible if Mew ex is not in the Active Spot.")
-        
+    
+    def test_refill_energy_zone(self):
+        player = Player("Ash", [], ["F", "W"])
+        logger = Logger()
+
+        # Empty energy zone
+        player.energy_zone = []
+        refill_energy_zone(player, logger)
+
+        self.assertEqual(len(player.energy_zone), 2, "Energy zone should be refilled to 2.")
+
 if __name__ == '__main__':
     unittest.main()

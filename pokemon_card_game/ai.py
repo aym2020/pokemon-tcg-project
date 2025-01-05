@@ -125,7 +125,7 @@ class BasicAI:
         for energy_type, required_amount in max_energy_required.items():
             missing_energy = required_amount - active.energy.get(energy_type, 0)
             if missing_energy > 0 and energy_type in self.player.energy_colors:
-                attach_energy(active, energy_type, 1, self.logger)
+                attach_energy(self.player, active, self.logger, energy_type)
                 return True
         return False
 
@@ -170,20 +170,23 @@ class BasicAI:
     
     def attach_missing_energy(self, pokemon, attack):
         """
-        Attach missing energy to a Pokémon for a given attack.
+        Attach missing energy to a Pokémon for a given attack using energy from the energy zone.
         :param pokemon: The Pokémon to attach energy to.
         :param attack: The attack being checked.
         :return: True if energy was attached; False otherwise.
         """
+        # Calculate missing energy for the attack
         missing_energy = {
             etype: attack.energy_required.get(etype, 0) - pokemon.energy.get(etype, 0)
             for etype in attack.energy_required
         }
+
+        # Attempt to attach missing energy
         for etype, amount in missing_energy.items():
-            if amount > 0 and etype in self.player.energy_colors:
-                attach_energy(pokemon, etype, 1, self.logger)
-                return True
-        return False
+            if amount > 0 and etype in self.player.energy_zone:
+                if attach_energy(self.player, pokemon, self.logger, energy_type=etype):
+                    return True  # Energy successfully attached
+        return False  # No energy attached
 
     def attack(self, opponent, game):
         """
@@ -260,7 +263,7 @@ class BasicAI:
                 p for p in [self.player.active_pokemon] + self.player.bench
                 if p and p.type == "Water"
             ]
-            return self.ai_decision(water_pokemon) if water_pokemon else None
+            return self.ai_decision(card, water_pokemon) if water_pokemon else None
 
         elif card.name == "Potion":
             # Ensure there is at least one damaged Pokémon
@@ -268,7 +271,7 @@ class BasicAI:
                 p for p in [self.player.active_pokemon] + self.player.bench
                 if p and p.current_hp < p.hp
             ]
-            return self.ai_decision(damaged_pokemon) if damaged_pokemon else None
+            return self.ai_decision(card, damaged_pokemon) if damaged_pokemon else None
 
         elif card.name == "Blaine":
             # Ensure there is at least one Ninetales, Rapidash, or Magmar
@@ -276,16 +279,23 @@ class BasicAI:
                 p for p in [self.player.active_pokemon] + self.player.bench
                 if p and p.name in ["Ninetales", "Rapidash", "Magmar"]
             ]
-            return self.ai_decision(eligible_pokemon) if eligible_pokemon else None
+            return self.ai_decision(card, eligible_pokemon) if eligible_pokemon else None
     
         elif card.name == "Erika":
             # Select damaged Grass Pokémon
             damaged_grass_pokemon = [
             p for p in [self.player.active_pokemon] + self.player.bench
             if p.type == "Grass" and p.current_hp < p.hp
-        ]
-        return self.ai_decision(damaged_grass_pokemon) if damaged_grass_pokemon else None
+            ]
+            return self.ai_decision(card, damaged_grass_pokemon) if damaged_grass_pokemon else None
 
+        elif card.name == "Brock":
+            # Select Golem or Onix
+            eligible_pokemon = [
+            p for p in [self.player.active_pokemon] + self.player.bench
+            if p and p.name in ["Golem", "Onix"]
+            ]
+            return self.ai_decision(card, eligible_pokemon) if eligible_pokemon else None
         # Add other cards here as needed
         return None
     
@@ -305,22 +315,102 @@ class BasicAI:
             )
         if card.name == "Erika":
             return any(
-            p.type == "Grass" and p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
-        )
+                p.type == "Grass" and p.current_hp < p.hp for p in [self.player.active_pokemon] + self.player.bench
+            )
+        if card.name == "Brock":
+            return any(
+             p.name in ["Golem", "Onix"] for p in [self.player.active_pokemon] + self.player.bench
+            )
         if card.name == "Budding Expeditioner":
             return self.player.active_pokemon and self.player.active_pokemon.name == "Mew ex"
+        if card.name == "Koga":
+            return self.player.active_pokemon is not None and self.player.active_pokemon.name in ["Muk", "Weezing"]
+       
         return True  # Default to eligible for cards without specific conditions
 
-    def ai_decision(self, pokemon_list):
+
+    def ai_decision(self, card, pokemon_list):
         """
-        AI logic to select a Pokémon from a list.
-        Defaults to the first Pokémon if no complex logic is implemented.
-        :param pokemon_list: List of Pokémon to choose from.
-        :return: The selected Pokémon.
+        AI logic to select a Pokémon or determine eligibility based on the card effect.
+        :param card: The Trainer or Object card being played.
+        :param pokemon_list: List of Pokémon to evaluate.
+        :return: The selected Pokémon or None if no valid choice exists.
         """
         if not pokemon_list:
             return None
-        # For now, simply pick the Pokémon with the lowest HP
+
+        if card.name == "Misty":
+            # Find the Water Pokémon (active or bench) that requires the most energy
+            max_missing_energy = -1
+            selected_pokemon = None
+
+            for pokemon in pokemon_list:
+                if pokemon.type == "Water":
+                    # Calculate missing energy for current attacks
+                    current_missing_energy = 0
+                    for attack in pokemon.attacks:
+                        for energy_type, required_amount in attack.energy_required.items():
+                            missing = required_amount - pokemon.energy.get(energy_type, 0)
+                            if missing > 0:
+                                current_missing_energy += missing
+
+                    # Include potential evolutions in missing energy calculation
+                    evolutions, max_energy_required = self.get_evolution_and_max_energy_from_deck(pokemon)
+                    for energy_type, required_amount in max_energy_required.items():
+                        missing = required_amount - pokemon.energy.get(energy_type, 0)
+                        if missing > 0:
+                            current_missing_energy += missing
+
+                    # Update the selected Pokémon if it requires more energy
+                    if current_missing_energy > max_missing_energy:
+                        max_missing_energy = current_missing_energy
+                        selected_pokemon = pokemon
+
+            return selected_pokemon
+
+        elif card.name == "Potion":
+            # Heal the Pokémon with the least HP remaining
+            return min(
+                (p for p in pokemon_list if p.current_hp < p.hp),
+                key=lambda p: p.current_hp,
+                default=None
+            )
+
+        elif card.name == "Erika":
+            # Heal Grass Pokémon with the least HP remaining
+            return min(
+                (p for p in pokemon_list if p.type == "Grass" and p.current_hp < p.hp),
+                key=lambda p: p.current_hp,
+                default=None
+            )
+
+        elif card.name == "Blaine":
+            # Find Ninetales, Rapidash, or Magmar
+            return next(
+                (p for p in pokemon_list if p.name in ["Ninetales", "Rapidash", "Magmar"]),
+                None
+            )
+
+        elif card.name == "Koga":
+            # Select Muk or Weezing in the Active Spot
+            return next(
+                (p for p in pokemon_list if p.name in ["Muk", "Weezing"]),
+                None
+            )
+
+        elif card.name == "Brock":
+            # Target Golem or Onix
+            return next(
+                (p for p in pokemon_list if p.name in ["Golem", "Onix"]),
+                None
+            )
+
+        elif card.name == "Budding Expeditioner":
+            # Check if Mew ex is in the Active Spot
+            return self.player.active_pokemon if self.player.active_pokemon.name == "Mew ex" else None
+
+        # Default logic: select Pokémon with the lowest HP
         return min(pokemon_list, key=lambda p: p.current_hp)
+
 
 

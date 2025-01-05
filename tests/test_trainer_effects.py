@@ -14,6 +14,7 @@ This test case tests the following features:
 5. Giovanni: Check that Giovanni effect boosts damage for all Pokémon.
 6. Blue: Check that Blue effect reduces damage taken by all Pokémon during the opponent's next turn.
 7. Erika: Check that Erika heals 50 damage from a Grass Pokémon.
+8. Koga: Check that Koga brings Muk or Weezing to the player's hand.
 """
     
 
@@ -284,6 +285,31 @@ class TestTrainerEffects(unittest.TestCase):
         # Check that Bulbasaur and Charmander were not healed
         self.assertEqual(bulbasaur.current_hp, 30, "Bulbasaur should not be healed by Erika.")
         self.assertEqual(charmander.current_hp, 60, "Charmander should not be healed by Erika.")
+    
+    def test_koga_effect(self):
+        """
+        Test that Koga brings Muk or Weezing to the player's hand.
+        """
+        # Create Pokémon
+        muk = PokemonCard("Muk", "Poison", 70, "Psychic", energy={"P": 2})
+        weezing = PokemonCard("Weezing", "Poison", 60, "Psychic", energy={"P": 1})
+        charmander = PokemonCard("Charmander", "Fire", 60, "Water", energy={"F": 1})
+        
+        # Create player
+        player = Player("Ash", [muk, weezing, charmander], ["Poison"])
+        
+        # Set active Pokémon and bench
+        player.active_pokemon = muk
+        player.bench = [weezing, charmander]
+        
+        # Number of cards in the player's hand before using Koga
+        hand_size_before = len(player.hand)
+        
+        # Execute Koga's effect
+        koga_effect(player, self.logger)
+        
+        # Check that Muk or Weezing was added to the player's hand
+        self.assertEqual(len(player.hand), hand_size_before + 1, "Koga should add Muk or Weezing to the player's hand.")
 
 if __name__ == "__main__":
     unittest.main()

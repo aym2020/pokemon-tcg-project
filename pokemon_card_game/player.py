@@ -15,6 +15,7 @@ class Player:
         self.newly_played_pokemons = []  # Track Pokémon played this turn
         self.newly_evolved_pokemons = [] # Track Pokémon evolved this turn
         self.trainer_card_played = False  # Tracks Trainer card usage
+        self.energy_zone = []  # Energy zone for managing generated energy
 
     def draw_card(self, logger):
         """

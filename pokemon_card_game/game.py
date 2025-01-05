@@ -1,8 +1,8 @@
 import random
 from pokemon_card_game.player import Player
-from pokemon_card_game.gameplay import generate_energy, attach_energy, perform_attack, evolve_pokemon
+from pokemon_card_game.gameplay import *
 from pokemon_card_game.objects_effects import object_effects
-from pokemon_card_game.card import PokemonCard
+from pokemon_card_game.card import *
 from pokemon_card_game.logger import Logger
 from colorama import Fore
 
@@ -131,7 +131,10 @@ class Game:
 
         current_player = self.players[self.current_turn]
         opponent = self.players[1 - self.current_turn]
-
+        
+        # Refill energy zone
+        refill_energy_zone(current_player, self.logger)
+        
         # Separator for the turn
         self.logger.separator(f"Turn {self.turn_count}: {current_player.name}'s Turn", color=Fore.CYAN)
 
@@ -145,6 +148,8 @@ class Game:
         self.logger.log(f"{opponent.name}'s Bench: {[p.name for p in opponent.bench]}", color=Fore.YELLOW)
         self.logger.log(f"{current_player.name}'s Newly Played: {[p.name for p in current_player.newly_played_pokemons]}", color=Fore.YELLOW)
         self.logger.log(f"{current_player.name}'s Newly Evolved: {[p.name for p in current_player.newly_evolved_pokemons]}", color=Fore.YELLOW)
+        self.logger.log(f"{current_player.name}'s Energy Zone: {current_player.energy_zone}", color=Fore.MAGENTA)
+        self.logger.log(f"{opponent.name}'s Energy Zone: {opponent.energy_zone}", color=Fore.MAGENTA)
 
         # Let the AI play the turn with enforced constraints
         self.ais[self.current_turn].play_turn(opponent, self)

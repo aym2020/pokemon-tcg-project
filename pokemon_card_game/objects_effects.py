@@ -1,5 +1,6 @@
 from colorama import Fore
 from pokemon_card_game.effects import *
+from pokemon_card_game.gameplay import *
 
 def misty_effect(target, logger=None):
     """
@@ -218,6 +219,35 @@ def budding_expeditioner_effect(player, logger=None):
         if logger:
             logger.log(f"{player.name} cannot use Budding Expeditioner as Mew ex is not in the Active Spot.", color=Fore.RED)
 
+def koga_effect(player, logger=None):
+    """
+    Put your Muk or Weezing in the Active Spot into your hand.
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if player.active_pokemon and player.active_pokemon.name in ["Muk", "Weezing"]:
+        pokemon = player.active_pokemon
+        player.active_pokemon = None
+        player.hand.append(pokemon)
+        if logger:
+            logger.log(f"{player.name} used Koga and returned {pokemon.name} from the Active Spot to their hand.", color=Fore.CYAN)
+    else:
+        if logger:
+            logger.log(f"Koga cannot be used; the Active Pokémon is not Muk or Weezing.", color=Fore.RED)
+
+def brock_effect(target, logger):
+    """
+    Directly attach a Fighting Energy to Golem or Onix, bypassing the energy zone.
+
+    :param player: The Player object.
+    :param logger: Logger instance to log messages.
+    """
+    if logger:
+        logger.log(f"Applying Brock effect to {target.name}.", color=Fore.CYAN)
+
+    # Attach generated energy based on the number of heads
+    attach_energy_directly(target, "W", 1, logger)
+
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
     "Misty": {
@@ -290,4 +320,15 @@ object_effects = {
         "requires_target": False,
         "eligibility_check": True
     },
+    "Koga": {
+        "effect": koga_effect,
+        "requires_target": False,
+        "eligibility_check": True
+    },
+    "Broke": {
+        "effect": brock_effect,
+        "requires_target": True,
+        "eligibility_check": True
+},
+
 }

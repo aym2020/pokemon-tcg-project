@@ -28,6 +28,7 @@ This test case tests the following features:
 17. Check that the AI uses Mythical Slab effect to add a Psychic Pokémon to the player's hand.
 18. Check that the AI uses Fossil card to add a random Basic Pokémon to the player's hand.
 19. Check that the AI uses Budding expeditioner to bring Mew ex to the player's hand.
+20. Check that the AI uses Koga to bring Muk or Weezing to the player's hand.
 """
 
 class TestAI(unittest.TestCase):
@@ -143,16 +144,19 @@ class TestAI(unittest.TestCase):
         game = Game(player, opponent, verbose=False)
         game.turn_count = 2
         
-        # Attach sufficient energy for Charmander's attack
-        attach_energy(player.active_pokemon, "F", 1, self.logger)
+        # Fill the player's energy zone for attack
+        player.energy_zone = ["F"]  # Add Fire energy required for Charmander's attack
         
         # Simulate AI turn
         ai.play_turn(opponent, game)
         
-        # Validate damage was dealt to the opponent
-        expected_hp = squirtle.hp - charmander.attacks[0].damage
-        self.assertEqual(opponent.active_pokemon.current_hp, max(0, expected_hp), "AI should attempt to attack during turn 2.")
+        # Calculate expected HP after attack
+        attack_damage = charmander.attacks[0].damage
+        expected_hp = squirtle.hp - attack_damage
         
+        # Validate that damage was dealt to the opponent's active Pokémon
+        self.assertEqual(opponent.active_pokemon.current_hp, max(0, expected_hp), "AI should attempt to attack during turn 2.")
+            
     def test_ai_use_potion_effect(self):
         """
         Test that the AI uses Potion effect to heal a Pokémon.
@@ -614,3 +618,35 @@ class TestAI(unittest.TestCase):
 
         # Ensure the active Pokémon spot is now empty
         self.assertIsNone(player.active_pokemon, "The Active Spot should be empty after using Budding Expeditioner.")
+
+    def test_ai_uses_koga(self):
+        """Test that the AI uses Koga when the active Pokémon is Muk or Weezing."""
+        # Create Muk and Weezing Pokémon cards
+        muk = PokemonCard("Muk", "Poison", 100, "Psychic")
+        weezing = PokemonCard("Weezing", "Poison", 90, "Psychic")
+
+        # Create player and set up the deck and hand
+        player = Player("Ash", [], ["Poison"])
+        player.active_pokemon = muk
+
+        # Create Koga card
+        koga_card = TrainerCard("Koga", effect="Put your Muk or Weezing in the Active Spot into your hand.")
+        player.hand.append(koga_card)
+
+        # Create AI instance
+        ai = BasicAI(player, self.logger)
+
+        # Ensure AI recognizes the card as eligible
+        self.assertTrue(ai.is_card_eligible(koga_card), "Koga should be eligible if Muk or Weezing is in the Active Spot.")
+
+        # Execute AI logic for using trainer cards
+        ai.use_trainer_card()
+
+        # Check that the Muk card is now in the player's hand
+        self.assertIn(muk, player.hand, "Muk should be added to the player's hand after using Koga.")
+
+        # Check that Koga card was removed from the hand
+        self.assertNotIn(koga_card, player.hand, "Koga should be removed from the player's hand after being used.")
+
+        # Ensure the active Pokémon spot is now empty
+        self.assertIsNone(player.active_pokemon, "The Active Spot should be empty after using Koga.")

@@ -5,32 +5,60 @@ from colorama import Fore
 def generate_energy(player, logger):
     """
     Generate energy for the player's active Pokémon based on their deck's energy colors.
-
     :param player: The Player object.
     :param logger: Logger instance to log messages.
     :return: The type of energy generated.
     """
+    if not player.energy_colors:
+        logger.log(f"{player.name} has no energy colors defined.", color=Fore.RED)
+        return None
+    
     if len(player.energy_colors) == 1:
-        energy = player.energy_colors[0]  # 100% chance for a single energy type
+        energy = player.energy_colors[0]  # Single energy type
     else:
-        energy = random.choice(player.energy_colors)  # Randomly choose one energy type
-    logger.log(f"{player.name} generated {energy} energy.")
+        energy = random.choice(player.energy_colors)  # Random choice for multiple types
+    
+    player.energy_zone.append(energy[0])  # Add the first letter of the energy type to the energy zone
+    logger.log(f"{player.name} generated {energy} energy.", color=Fore.YELLOW)
     return energy
 
-def attach_energy(pokemon, energy_type, amount, logger):
+def attach_energy(player, pokemon, logger, energy_type=None):
     """
-    Attach energy to a Pokémon.
+    Attach energy from the player's energy zone to a Pokémon.
+    :param player: The Player object.
+    :param pokemon: The Pokémon to attach energy to.
+    :param logger: Logger instance to log messages.
+    :param energy_type: The specific type of energy to attach (optional).
+    :return: True if energy was attached, False otherwise.
+    """
+    if not player.energy_zone:
+        logger.log(f"{player.name} has no energy in the energy zone.", color=Fore.RED)
+        return False
 
-    :param pokemon: The Pokémon card instance.
-    :param energy_type: The type of energy to attach (e.g., 'F', 'C').
-    :param amount: The number of energy units to attach.
+    # If energy_type is specified, check if it exists in the energy zone
+    if energy_type:
+        if energy_type not in player.energy_zone:
+            logger.log(f"{player.name} does not have {energy_type} energy in the energy zone.", color=Fore.RED)
+            return False
+        player.energy_zone.remove(energy_type)
+    else:
+        # Use the first energy in the energy zone by default
+        energy_type = player.energy_zone.pop(0)
+
+    # Attach the energy to the Pokémon
+    pokemon.energy[energy_type] = pokemon.energy.get(energy_type, 0) + 1
+    logger.log(f"{player.name} attached 1 {energy_type} energy to {pokemon.name}.", color=Fore.GREEN)
+    return True
+
+def refill_energy_zone(player, logger):
+    """
+    Refill the player's energy zone at the start of their turn.
+
+    :param player: The Player object.
     :param logger: Logger instance to log messages.
     """
-    if hasattr(pokemon, "energy"):
-        pokemon.energy[energy_type] = pokemon.energy.get(energy_type, 0) + amount
-        logger.log(f"{amount} {energy_type} energy attached to {pokemon.name}.")
-    else:
-        logger.log(f"{pokemon.name} cannot have energy attached.", color=Fore.RED)
+    while len(player.energy_zone) < 2:
+        generate_energy(player, logger)
 
 def calculate_damage(attack, attacker, defender, logger):
     """
