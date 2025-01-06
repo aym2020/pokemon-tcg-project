@@ -29,6 +29,7 @@ This test case tests the following features:
 18. Check that the AI uses Fossil card to add a random Basic Pokémon to the player's hand.
 19. Check that the AI uses Budding expeditioner to bring Mew ex to the player's hand.
 20. Check that the AI uses Koga to bring Muk or Weezing to the player's hand.
+21. Check that the AI uses Red Card to shuffle the opponent's hand into their deck and draw 3 cards.
 """
 
 class TestAI(unittest.TestCase):
@@ -48,25 +49,25 @@ class TestAI(unittest.TestCase):
         bulbasaur = PokemonCard("Bulbasaur", "Grass", 60, "Fire", is_ex=False, subcategory="Basic", attacks=["20G"])
         
         # Create players and AI
-        player1 = Player("Ash", [charmander, charmeleon], ["Fire"])
-        player2 = Player("Gary", [bulbasaur], ["Grass"])
-        player1.hand.append(charmeleon)  # Add Charmeleon to player1's hand
-        player1.active_pokemon = charmander
-        player2.active_pokemon = bulbasaur
+        player = Player("Ash", [charmander, charmeleon], ["Fire"])
+        opponent = Player("Gary", [bulbasaur], ["Grass"])
+        player.hand.append(charmeleon)  # Add Charmeleon to player's hand
+        player.active_pokemon = charmander
+        opponent.active_pokemon = bulbasaur
 
-        ai1 = BasicAI(player1, self.logger)
-        ai2 = BasicAI(player2, self.logger)
+        ai1 = BasicAI(player, self.logger)
+        ai2 = BasicAI(opponent, self.logger)
         
         # Create game and set turn to 1
-        game = Game(player1, player2, verbose=False, ai1=ai1, ai2=ai2)
+        game = Game(player, opponent, verbose=False, ai1=ai1, ai2=ai2)
         game.turn_count = 1  # Set to turn 1 to allow evolution
 
-        # Simulate AI turn for player1
-        ai1.play_turn(player2, game)
+        # Simulate AI turn for player
+        ai1.play_turn(opponent, game)
         
         # Check that Charmeleon is still in the hand and Charmander remains unevolved
-        self.assertIn(charmeleon, player1.hand, "AI should not attempt to evolve Charmander during turn 1.")
-        self.assertEqual(player1.active_pokemon, charmander, "Charmander should remain unevolved during turn 1.")
+        self.assertIn(charmeleon, player.hand, "AI should not attempt to evolve Charmander during turn 1.")
+        self.assertEqual(player.active_pokemon, charmander, "Charmander should remain unevolved during turn 1.")
     
     def test_ai_prevent_attack_during_turn_one(self):
         """
@@ -104,25 +105,25 @@ class TestAI(unittest.TestCase):
         bulbasaur = PokemonCard("Bulbasaur", "Grass", 60, "Fire", is_ex=False, subcategory="Basic", attacks=["20G"])
         
         # Create players and AI
-        player1 = Player("Ash", [charmander, charmeleon], ["Fire"])
-        player2 = Player("Gary", [bulbasaur], ["Grass"])
-        player1.hand.append(charmeleon)  # Add Charmeleon to player1's hand
-        player1.active_pokemon = charmander
-        player2.active_pokemon = bulbasaur
+        player = Player("Ash", [charmander, charmeleon], ["Fire"])
+        opponent = Player("Gary", [bulbasaur], ["Grass"])
+        player.hand.append(charmeleon)  # Add Charmeleon to player's hand
+        player.active_pokemon = charmander
+        opponent.active_pokemon = bulbasaur
 
-        ai1 = BasicAI(player1, self.logger)
-        ai2 = BasicAI(player2, self.logger)
+        ai1 = BasicAI(player, self.logger)
+        ai2 = BasicAI(opponent, self.logger)
         
         # Create game and set turn to 2
-        game = Game(player1, player2, verbose=False, ai1=ai1, ai2=ai2)
+        game = Game(player, opponent, verbose=False, ai1=ai1, ai2=ai2)
         game.turn_count = 2  # Set to turn 2 to allow evolution
 
-        # Simulate AI turn for player1
-        ai1.play_turn(player2, game)
+        # Simulate AI turn for player
+        ai1.play_turn(opponent, game)
         
         # Check that Charmeleon is no longer in the hand and Charmander has evolved
-        self.assertNotIn(charmeleon, player1.hand, "Charmeleon should no longer be in the hand after evolution.")
-        self.assertEqual(player1.active_pokemon.name, "Charmeleon", "Charmander should have evolved into Charmeleon.")
+        self.assertNotIn(charmeleon, player.hand, "Charmeleon should no longer be in the hand after evolution.")
+        self.assertEqual(player.active_pokemon.name, "Charmeleon", "Charmander should have evolved into Charmeleon.")
 
     def test_ai_allow_attack_during_turn_two(self):
         """
@@ -167,6 +168,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [squirtle], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Set up active Pokémon
         player.active_pokemon = squirtle
@@ -184,7 +186,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Potion effect
-        ai.use_object_card()
+        ai.use_object_card(opponent)
         
         # Check that the Pokémon was healed
         self.assertGreater(squirtle.current_hp, hp_before, "Pokémon should be healed by Potion effect.")
@@ -198,6 +200,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Create Potion card
         potion = ObjectCard("Potion", "Heal 20 HP from the target Pokémon.")
@@ -212,7 +215,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Potion effect
-        ai.use_object_card()
+        ai.use_object_card(opponent)
         
         # Check that the Potion was not used
         self.assertIn(potion, player.hand, "Potion should not be used if there are no Pokémon to heal.")
@@ -227,6 +230,7 @@ class TestAI(unittest.TestCase):
                 
         # Create player
         player = Player("Ash", [charmander, squirtle], ["Fire", "Water"])
+        opponent = Player("Gary", [], [])
         
         # Define the number of cards in the player's hand before using Poké Ball
         hand_size_before = len(player.hand)
@@ -241,7 +245,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Poké Ball effect
-        ai.use_object_card()
+        ai.use_object_card(opponent)
         
         # Check that a Pokémon was added to the player's hand
         self.assertEqual(len(player.hand), hand_size_before + 1, "Poké Ball should add a Pokémon to the player's hand.")
@@ -255,6 +259,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [charmander], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Set Charmander as the active Pokémon
         player.active_pokemon = charmander  # Fire type
@@ -270,7 +275,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Misty effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that no energy was attached
         self.assertEqual(charmander.energy.get("W", 0), 0, "Charmander should not receive Water Energy.")
@@ -286,6 +291,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [ninetales, rapidash, magmar], ["Fire"])
+        opponent = Player("Gary", [], [])
         
         # Set up active Pokémon
         player.active_pokemon = ninetales
@@ -303,7 +309,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Blaine effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that the damage was boosted
         self.assertEqual(ninetales.damage_boost, damage_boost_before + 30, "Blaine effect should boost damage for Ninetales.")
@@ -317,6 +323,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [charmander], ["Fire"])
+        opponent = Player("Gary", [], [])
         
         # Set Charmander as the active Pokémon
         player.active_pokemon = charmander  # Fire type
@@ -332,7 +339,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Blaine effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that the Blaine card was not used
         self.assertIn(blaine, player.hand, "Blaine effect should not be used if there are no Ninetales, Rapidash, or Magmar.")
@@ -347,6 +354,7 @@ class TestAI(unittest.TestCase):
         
         # Create player with a non-empty deck
         player = Player("Ash", [charmander, squirtle], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Define the number of cards in the player's hand before using Professor's Research
         hand_size_before = len(player.hand)
@@ -361,7 +369,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Professor's Research effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that 2 cards were drawn from the player's deck
         self.assertEqual(len(player.hand), hand_size_before + 2, "Professor's Research should draw 2 cards from the player's deck.")
@@ -379,6 +387,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [rapidash], ["Fire"])
+        opponent = Player("Gary", [], [])
         
         # Set active Pokémon
         player.active_pokemon = rapidash
@@ -390,7 +399,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Trainer card
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that only one Trainer card was used
         self.assertTrue(player.trainer_card_played, "AI should have played one Trainer card.")
@@ -408,11 +417,12 @@ class TestAI(unittest.TestCase):
         player = Player("Ash", [ninetales, magmar], ["Fire"])
         player.active_pokemon = ninetales
         player.bench = [magmar]
+        opponent = Player("Gary", [], [])
         
         # Create Giovanni card
         giovanni = TrainerCard("Giovanni", "Boost all Pokémon attacks by 10 damage.")
         player.hand.append(giovanni)
-        
+                
         # Damage boost before playing Giovanni
         ninetales_damage_boost_before = ninetales.damage_boost
         magmar_damage_boost_before = magmar.damage_boost
@@ -421,7 +431,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Giovanni effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
 
         # Check that the damage was boosted
         self.assertEqual(ninetales.damage_boost, ninetales_damage_boost_before + 10, "Ninetales should receive a +10 damage boost.")
@@ -437,6 +447,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Set active Pokémon and bench
         player.active_pokemon = squirtle
@@ -447,7 +458,7 @@ class TestAI(unittest.TestCase):
         player.hand.append(blue)
 
         ai = BasicAI(player, self.logger)
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
 
         # Verify damage reduction
         self.assertEqual(squirtle.damage_reduction, 10)
@@ -463,6 +474,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [bulbasaur], ["Grass"])
+        opponent = Player("Gary", [], [])
         
         # Set active Pokémon
         player.active_pokemon = bulbasaur
@@ -480,7 +492,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Erika effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that the Pokémon was healed
         self.assertGreater(bulbasaur.current_hp, hp_before, "Pokémon should be healed by Erika effect.")
@@ -494,6 +506,7 @@ class TestAI(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [charmander], ["Fire"])
+        opponent = Player("Gary", [], [])
         
         # Set Charmander as the active Pokémon
         player.active_pokemon = charmander  # Fire type
@@ -509,7 +522,7 @@ class TestAI(unittest.TestCase):
         ai = BasicAI(player, self.logger)
         
         # Use Erika effect
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
         
         # Check that the Erika card was not used
         self.assertIn(erika, player.hand, "Erika effect should not be used if there are no Grass Pokémon.")
@@ -525,12 +538,13 @@ class TestAI(unittest.TestCase):
         # Create a player and add cards to their deck and hand
         player = Player("Ash", [card1, card2, card3], energy_colors=["Fire"])
         player.hand.append(pokedex)
+        opponent = Player("Gary", [], [])
 
         # Create AI
         ai = BasicAI(player, self.logger)
 
         # Use Pokédex
-        ai.use_object_card()
+        ai.use_object_card(opponent)
 
         # Check that the Pokédex card was used and is no longer in the hand
         self.assertNotIn(pokedex, player.hand, "Pokédex should be removed from the hand after use.")
@@ -545,12 +559,13 @@ class TestAI(unittest.TestCase):
         # Create a player and add cards to their deck and hand
         player = Player("Ash", [psychic_card, non_psychic_card], energy_colors=["Psychic"])
         player.hand.append(mythical_slab)
+        opponent = Player("Gary", [], [])
 
         # Create AI
         ai = BasicAI(player, self.logger)
 
         # Use Mythical Slab
-        ai.use_object_card()
+        ai.use_object_card(opponent)
 
         # Check that the Mythical Slab card was used and is no longer in the hand
         self.assertNotIn(mythical_slab, player.hand, "Mythical Slab should be removed from the hand after use.")
@@ -559,7 +574,7 @@ class TestAI(unittest.TestCase):
         self.assertIn(psychic_card, player.hand, "Psychic Pokémon should be in the hand after using Mythical Slab.")
 
         # Use Mythical Slab again for the next card
-        ai.use_object_card()
+        ai.use_object_card(opponent)
 
         # Check that the non-psychic card was placed at the bottom of the deck
         self.assertEqual(player.deck[-1], non_psychic_card, "Non-Psychic Pokémon should be placed at the bottom of the deck.")
@@ -596,6 +611,7 @@ class TestAI(unittest.TestCase):
         # Create player and set up the deck and hand
         player = Player("Ash", [], ["Psychic"])
         player.active_pokemon = mew_ex
+        opponent = Player("Gary", [], [])
 
         # Create Budding Expeditioner card
         budding_expeditioner = TrainerCard("Budding Expeditioner", effect="Put your Mew ex in the Active Spot into your hand.")
@@ -608,7 +624,7 @@ class TestAI(unittest.TestCase):
         self.assertTrue(ai.is_card_eligible(budding_expeditioner), "Budding Expeditioner should be eligible if Mew ex is in the Active Spot.")
 
         # Execute AI logic for using trainer cards
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
 
         # Check that the Mew ex card is now in the player's hand
         self.assertIn(mew_ex, player.hand, "Mew ex should be added to the player's hand after using Budding Expeditioner.")
@@ -628,7 +644,8 @@ class TestAI(unittest.TestCase):
         # Create player and set up the deck and hand
         player = Player("Ash", [], ["Poison"])
         player.active_pokemon = muk
-
+        opponent = Player("Gary", [], [])
+        
         # Create Koga card
         koga_card = TrainerCard("Koga", effect="Put your Muk or Weezing in the Active Spot into your hand.")
         player.hand.append(koga_card)
@@ -640,7 +657,7 @@ class TestAI(unittest.TestCase):
         self.assertTrue(ai.is_card_eligible(koga_card), "Koga should be eligible if Muk or Weezing is in the Active Spot.")
 
         # Execute AI logic for using trainer cards
-        ai.use_trainer_card()
+        ai.use_trainer_card(opponent)
 
         # Check that the Muk card is now in the player's hand
         self.assertIn(muk, player.hand, "Muk should be added to the player's hand after using Koga.")
@@ -650,3 +667,39 @@ class TestAI(unittest.TestCase):
 
         # Ensure the active Pokémon spot is now empty
         self.assertIsNone(player.active_pokemon, "The Active Spot should be empty after using Koga.")
+
+    def test_ai_uses_red_card(self):
+        """
+        Test that the AI uses Red Card during its turn.
+        """
+        # Create players
+        player = Player("Ash", [], [])
+        opponent = Player("Gary", [], [])
+
+        # Add Red Card to the player's hand
+        red_card = ObjectCard("Red Card")
+        player.hand = [red_card]
+
+        # Add cards to the opponent's hand and deck
+        opponent.hand = [
+            TrainerCard("Potion"),
+            TrainerCard("Blue"),
+            TrainerCard("Professor's Research")
+        ]
+        opponent.deck = [
+            TrainerCard("Giovanni"),
+            TrainerCard("Misty")
+        ]
+
+        # Create AI
+        ai1 = BasicAI(player, self.logger)
+
+        # Create game
+        game = Game(player, opponent, verbose=False)
+
+        # AI turn logic
+        ai1.use_object_card(opponent)
+
+        # Verify Red Card was used
+        self.assertNotIn(red_card, player.hand, "Red Card should be removed from the player's hand after being used.")
+        self.assertEqual(len(opponent.hand), 3, "Opponent should have 3 cards in their hand after Red Card effect.")

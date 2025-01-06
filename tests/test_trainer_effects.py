@@ -36,6 +36,7 @@ class TestTrainerEffects(unittest.TestCase):
         
         # Create player
         player = Player("Ash", [squirtle, magikarp, charmander], ["Water"])
+        opponent = Player("Gary", [], [])
         
         # Add Pokémon to player's bench
         player.active_pokemon = squirtle
@@ -59,7 +60,7 @@ class TestTrainerEffects(unittest.TestCase):
         charmander_energy = charmander.energy.get("W", 0)
 
         # Execute Misty's effect
-        misty_effect(target, logger=None)
+        misty_effect(target, opponent, logger=None)
         
         # Check that Magikarp was chosen and received Water Energy
         self.assertGreaterEqual(magikarp.energy.get("W", 0), magikarp_energy, "Magikarp should receive at least 0 additional Water Energy.")

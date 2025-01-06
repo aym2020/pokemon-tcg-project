@@ -11,6 +11,7 @@ This test case tests the following features:
 3. Poké Ball: Do nothing if there are no Basic Pokémon.
 4. Pokédex: Look at the top 3 cards of the deck.
 5. Mythical Slab: Add a Psychic Pokémon to the player's hand.
+6. Red Card: Make the opponent shuffle their hand into the deck.
 """
 
 class TestObjectEffects(unittest.TestCase):
@@ -109,3 +110,40 @@ class TestObjectEffects(unittest.TestCase):
         mythical_slab_effect(player, self.logger)
         self.assertNotIn(non_psychic_card, player.hand)
         self.assertEqual(player.deck, [non_psychic_card])  # Should be placed at the bottom
+
+    def test_red_card_effect(self):
+        """
+        Test that the opponent shuffles their hand into their deck and draws 3 cards.
+        """
+        # Create players
+        player = Player("Ash", [], [])
+        opponent = Player("Gary", [], [])
+        
+        # Add cards to player's hand and deck
+        player.hand = [
+            ObjectCard("Red Card")
+        ]
+
+        # Add cards to opponent's hand and deck
+        opponent.hand = [
+            TrainerCard("Potion"),
+            TrainerCard("Blue"),
+            TrainerCard("Professor's Research")
+        ]
+        opponent.deck = [
+            TrainerCard("Giovanni"),
+            TrainerCard("Misty")
+        ]
+
+        # Define expected deck after shuffling
+        expected_deck_size = len(opponent.hand) + len(opponent.deck)
+        expected_hand_size = 3
+
+        # Execute Red Card effect
+        red_card_effect(player, opponent, self.logger)
+
+        # Verify the opponent's deck size and contents
+        self.assertEqual(len(opponent.deck), expected_deck_size - expected_hand_size, "Opponent's deck size should be updated.")
+        self.assertEqual(len(opponent.hand), expected_hand_size, "Opponent should have exactly 3 cards in their hand.")
+
+        

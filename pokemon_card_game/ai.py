@@ -18,10 +18,10 @@ class BasicAI:
             self.logger.log(f"{self.player.name}'s first turn: No card draw, energy generation, or evolution allowed.", color=Fore.MAGENTA)
             
             # Use Object cards (no limit)
-            self.use_object_card()
+            self.use_object_card(opponent)
             
             # Use Trainer card (only one per turn)
-            self.use_trainer_card()
+            self.use_trainer_card(opponent)
             
             # Play Pokémon if needed
             self.play_pokemon_if_needed()
@@ -41,10 +41,10 @@ class BasicAI:
         self.manage_energy_attachment()
         
         # Use Object cards (no limit)
-        self.use_object_card()
+        self.use_object_card(opponent)
         
         # Use Trainer card (only one per turn)
-        self.use_trainer_card()
+        self.use_trainer_card(opponent)
             
         # Play Pokémon if needed
         self.play_pokemon_if_needed()
@@ -197,7 +197,7 @@ class BasicAI:
         if self.player.active_pokemon:
             perform_attack(self.player, opponent, self.logger, game)
     
-    def use_trainer_card(self):
+    def use_trainer_card(self, opponent):
         """Play a single Trainer card if applicable."""
         if self.player.trainer_card_played:
             self.logger.log(f"{self.player.name} has already played a Trainer card this turn.", color=Fore.RED)
@@ -218,17 +218,17 @@ class BasicAI:
                     if requires_target:
                         target = self.select_target_for_card(card)
                         if target:
-                            effect(target, logger=self.logger)
+                            effect(target, opponent, logger=self.logger)
                             self.player.hand.remove(card)
                             self.player.trainer_card_played = True
                             return  # Only one Trainer card allowed per turn
                     else:
-                        effect(self.player, logger=self.logger)
+                        effect(self.player, opponent, logger=self.logger)
                         self.player.hand.remove(card)
                         self.player.trainer_card_played = True
                         return  # Only one Trainer card allowed per turn
 
-    def use_object_card(self):
+    def use_object_card(self, opponent):
         """Play Object cards, which have no limit on usage."""
         for card in self.player.hand[:]:
             if isinstance(card, ObjectCard):
@@ -245,12 +245,16 @@ class BasicAI:
                     if requires_target:
                         target = self.select_target_for_card(card)
                         if target:
-                            effect(target, logger=self.logger)
-                            self.player.hand.remove(card)
+                            effect(target, opponent, logger=self.logger)  # Correct call for potion_effect
+                            self.player.hand.remove(card)  # Remove card after use
                     else:
-                        effect(self.player, logger=self.logger)
-                        self.player.hand.remove(card)
-                        
+                        # Apply effect without a target
+                        effect(self.player, opponent, self.logger)
+
+                    # Ensure card is removed only if it exists
+                    if card in self.player.hand:
+                        self.player.hand.remove(card)  # Remove card after use
+
     def select_target_for_card(self, card):
         """
         Determine the appropriate target for a Trainer or Object card.

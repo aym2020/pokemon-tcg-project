@@ -2,7 +2,7 @@ from colorama import Fore
 from pokemon_card_game.effects import *
 from pokemon_card_game.gameplay import *
 
-def misty_effect(target, logger=None):
+def misty_effect(target, opponent, logger=None):
     """
     Flip coins until tails and attach Water Energy for each heads to the target Pokémon.
     :param target: The Pokémon to receive the energy.
@@ -17,7 +17,7 @@ def misty_effect(target, logger=None):
     # Attach generated energy based on the number of heads
     attach_energy_directly(target, "W", heads_count, logger)
 
-def potion_effect(target, logger=None):
+def potion_effect(target, opponent, logger=None):
     """
     Heal 20 HP from the target Pokémon.
     :param target: The Pokémon to heal.
@@ -33,7 +33,7 @@ def potion_effect(target, logger=None):
     if logger:
         logger.log(f"Healed {target.name} by 20 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)
 
-def pokeball_effect(player, logger=None):
+def pokeball_effect(player, opponent, logger=None):
     """
     Find a random Basic Pokémon from the deck, add it to the player's hand, and shuffle the deck.
     :param player: The Player object.
@@ -58,7 +58,7 @@ def pokeball_effect(player, logger=None):
     # Shuffle the remaining deck
     shuffle_deck(player.deck, logger)
 
-def professors_research_effect(player, logger=None):
+def professors_research_effect(player, opponent, logger=None):
     """
     Draw 2 cards from the player's deck using the draw_cards utility.
     :param player: The Player object.
@@ -69,7 +69,7 @@ def professors_research_effect(player, logger=None):
 
     draw_cards(player, 2, logger)
 
-def blaine_effect(player, logger=None):
+def blaine_effect(player, opponent, logger=None):
     """
     During this turn, attacks used by your Ninetales, Rapidash, or Magmar do +30 damage to the opponent's Active Pokémon.
     :param player: The Player object.
@@ -83,7 +83,7 @@ def blaine_effect(player, logger=None):
         if pokemon.name in ["Ninetales", "Rapidash", "Magmar"]:
             boost_attack_damage([pokemon], 30, logger)
 
-def giovanni_effect(player, logger=None):
+def giovanni_effect(player, opponent, logger=None):
     """
     During this turn, attacks used by all of the player's Pokémon do +10 damage to the opponent's Active Pokémon.
     :param player: The Player object.
@@ -99,7 +99,7 @@ def giovanni_effect(player, logger=None):
             if logger:
                 logger.log(f"{pokemon.name}'s attacks will do +10 damage this turn.", color=Fore.GREEN)
 
-def blue_effect(player, logger=None):
+def blue_effect(player, opponent, logger=None):
     """
     During your opponent's next turn, all of your Pokémon take −10 damage from attacks.
     :param player: The Player object.
@@ -113,7 +113,7 @@ def blue_effect(player, logger=None):
         if hasattr(pokemon, "damage_reduction"):
             pokemon.damage_reduction += 10  # Add a temporary reduction of 10
     
-def erika_effect(target, logger=None):
+def erika_effect(target, opponent, logger=None):
     """
     Heal 50 damage from the target Pokémon if it is of Grass type.
     :param target: The Pokémon to heal.
@@ -129,7 +129,7 @@ def erika_effect(target, logger=None):
     if logger:
         logger.log(f"Healed {target.name} by 50 HP. Current HP: {target.current_hp}/{target.hp}", color=Fore.GREEN)
 
-def pokedex_effect(player, logger=None):
+def pokedex_effect(player, opponent, logger=None):
     """
     Look at the top 3 cards of the player's deck.
     :param player: The Player object.
@@ -148,7 +148,7 @@ def pokedex_effect(player, logger=None):
     if logger:
         logger.log(f"Top 3 cards of the deck: {[card.name for card in top_3_cards]}", color=Fore.CYAN)
 
-def mythical_slab_effect(player, logger=None):
+def mythical_slab_effect(player, opponent, logger=None):
     """
     Look at the top card of the player's deck.
     If it is a Psychic Pokémon, add it to their hand.
@@ -201,7 +201,7 @@ def fossil_effect(player, object_card, logger=None):
         if logger:
             logger.log(f"{player.name} played {object_card.name} as a 40-HP Colorless Pokémon.", color=Fore.CYAN)
 
-def budding_expeditioner_effect(player, logger=None):
+def budding_expeditioner_effect(player, opponent, logger=None):
     """
     Put your Mew ex in the Active Spot into your hand.
     :param player: The Player object.
@@ -219,7 +219,7 @@ def budding_expeditioner_effect(player, logger=None):
         if logger:
             logger.log(f"{player.name} cannot use Budding Expeditioner as Mew ex is not in the Active Spot.", color=Fore.RED)
 
-def koga_effect(player, logger=None):
+def koga_effect(player, opponent, logger=None):
     """
     Put your Muk or Weezing in the Active Spot into your hand.
     :param player: The Player object.
@@ -235,7 +235,7 @@ def koga_effect(player, logger=None):
         if logger:
             logger.log(f"Koga cannot be used; the Active Pokémon is not Muk or Weezing.", color=Fore.RED)
 
-def brock_effect(target, logger):
+def brock_effect(target, opponent, logger):
     """
     Directly attach a Fighting Energy to Golem or Onix, bypassing the energy zone.
 
@@ -248,12 +248,27 @@ def brock_effect(target, logger):
     # Attach generated energy based on the number of heads
     attach_energy_directly(target, "W", 1, logger)
 
+def red_card_effect(player, opponent, logger=None):
+    """
+    Your opponent shuffles their hand into their deck and draws 3 cards.
+    """
+    if logger:
+        logger.log(f"{player.name} uses Red Card! {opponent.name} shuffles their hand into the deck and draws 3 cards.", color=Fore.CYAN)
+    
+    # Shuffle opponent's hand into their deck
+    opponent.deck.extend(opponent.hand)
+    shuffle_deck(opponent.deck, logger)
+    opponent.hand.clear()
+
+    # Opponent draws 3 cards
+    draw_cards(opponent, 3, logger)
+
 # Mapping Trainer cards to their corresponding effects
 object_effects = {
     "Misty": {
         "effect": misty_effect,
         "requires_target": True,
-        "eligibility_check": True
+        "eligibility_check": True,
     },
     "Potion": {
         "effect": potion_effect,
@@ -329,6 +344,11 @@ object_effects = {
         "effect": brock_effect,
         "requires_target": True,
         "eligibility_check": True
-},
+    },
+    "Red Card": {
+        "effect": red_card_effect,
+        "requires_target": False,
+        "eligibility_check": False  # Always eligible
+    },
 
 }
