@@ -67,7 +67,7 @@ class TestSleepMechanics(unittest.TestCase):
 
     def test_evolve_cures_status(self):
         """
-        Test that evolving a Pokémon cures its status effects.
+        Test that evolving a Pokémon cures all its status effects.
         """
         self.charmander.status = "asleep"
 
